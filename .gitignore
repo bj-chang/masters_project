@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+venv-firedrake/
+venv/
+.venv/
+
+# LaTeX build artefacts
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.synctex.gz
+*.toc
+*.fls
+*.fdb_latexmk
+*.lof
+*.lot
+*.idx
+*.ilg
+*.ind
+
+# OS / editor cruft
+.DS_Store
+*:Zone.Identifier
+.vscode/
+.idea/
+
+# Backups
+*_backup_*/
