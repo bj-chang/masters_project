@@ -3,6 +3,11 @@ from firedrake import *
 from firedrake.adjoint import *
 from pyadjoint.optimization.tao_solver import TAOSolver
 
+
+# To increase max storage
+from firedrake.petsc import PETSc
+PETSc.Options().setValue('-tao_lmvm_mat_lmvm_hist_size', 100)
+
 alpha = 1.0e-4
 
 
@@ -76,12 +81,57 @@ def run_tao(mesh):
         Jhat = ReducedFunctional(J, Control(m), tape=tape)   # note Control(m) uses the L2 Riesz map by default
     pause_annotation()
 
-    # Run LMVM with an absolute gradient tolerance. tao_gttol should stop 
+    # Run LMVM with an absolute gradient tolerance. tao_gttol should stop
     # the optimiser before the slowdown shows up.
+
+    # =========== CHANGED =====================
+    # tao_params = {'tao_type': 'lmvm',
+    #               'tao_gatol': 1.0e-7, 'tao_grtol': 0.0, 'tao_gttol': 0.0,
+    #               'tao_max_it': 5000}
+
+    # # first suggestion - unit LS:
+    # tao_params = {'tao_type': 'lmvm',
+    #               'tao_gatol': 1.0e-7, 'tao_grtol': 0.0, 'tao_gttol': 0.0,
+    #               'tao_max_it': 5000,
+    #               'tao_ls_type': 'unit'}
+
+    # # second suggestion: looser gatol, relative gttol active,
+    # # monitor on so we can see the per-iteration gradient trajectory.
+    # tao_params = {'tao_type': 'lmvm',
+    #             #   'tao_gatol': 1.0e-7, 'tao_grtol': 0.0, 'tao_gttol': 0.0,
+    #               'tao_gatol': 1.0e-5, 'tao_grtol': 0.0, 'tao_gttol': 1.0e-7,
+    #               'tao_max_it': 5000,
+    #               'tao_ls_type': 'unit',
+    #               'tao_monitor': None
+    #               }
+    
     tao_params = {'tao_type': 'lmvm',
-                  'tao_gatol': 1.0e-7, 'tao_grtol': 0.0, 'tao_gttol': 0.0,
-                  'tao_max_it': 5000}
-    tao = TAOSolver(MinimizationProblem(Jhat), parameters=tao_params)
+              'tao_gatol': 1.0e-7, 'tao_grtol': 0.0, 'tao_gttol': 0.0,
+            #   'tao_gatol': 1.0e-5, 'tao_grtol': 0.0, 'tao_gttol': 1.0e-7,
+              'tao_max_it': 5000,
+              'tao_ls_type': 'unit',
+            #   'tao_monitor': None,
+              'tao_lmvm_mat_lmvm_hist_size': 100, 
+            #   'tao_view': None,          
+              }
+    
+    # # (keep the existing tao_params dict, but drop the hist_size entry -
+    # #  we're setting it the other way)
+    # tao_params = {'tao_type': 'lmvm',
+    #             'tao_gatol': 1.0e-7, 'tao_grtol': 0.0, 'tao_gttol': 0.0,
+    #             'tao_max_it': 5000,
+    #             'tao_ls_type': 'unit',
+    #             # 'tao_monitor': None,
+    #             'tao_view': None
+    #             }
+
+    # 
+    # PETSc.Options().setValue('-tao_lmvm_mat_lmvm_hist_size', 100)
+
+    
+    # tao = TAOSolver(MinimizationProblem(Jhat), parameters=tao_params)
+    tao = TAOSolver(MinimizationProblem(Jhat), parameters=tao_params,
+                options_prefix="")
     tao.solve()
     return tao.tao.getIterationNumber()
 
@@ -89,6 +139,7 @@ def run_tao(mesh):
 # Print over a few grading levels
 
 print(f"{'stretch':>7}  {'h_ratio':>7}  {'TAO iters':>9}")
+# for stretch in (0.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 20.0, 25.0):
 for stretch in (0.0, 3.0, 4.0, 5.0):
     mesh = graded_square(stretch=stretch)
     print(f"{stretch:7.1f}  {h_ratio(mesh):7.1f}  {run_tao(mesh):9d}", flush=True)
