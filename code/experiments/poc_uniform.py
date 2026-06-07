@@ -1,14 +1,14 @@
 """Proof-of-concept run on uniform meshes.
 
-A lighter version of ``scripts/table_2_2.py`` that uses uniform meshes
-and so needs no Netgen. The l^2 row grows with N; the L^2 and H^1 rows
-stay roughly flat.
+Lighter version of ``table_2_2.py`` that uses uniform meshes and so
+needs no Netgen. The l^2 row grows with N; the L^2 and H^1 rows stay
+roughly flat.
 """
 
 from argparse import ArgumentParser
 
-from pdeopt.meshes import uniform_unit_square
-from pdeopt.problems.poisson_control import solve_poisson_control
+from meshdep.meshes import uniform_unit_square
+from meshdep.problems.poisson_control import solve_poisson_control
 
 
 def run_poc_uniform(resolutions, riesz_maps):

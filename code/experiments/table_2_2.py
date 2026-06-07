@@ -7,21 +7,20 @@ iteration count at convergence ``eps = 1e-7`` on
 
 from argparse import ArgumentParser
 
-from pdeopt.meshes import (
+from meshdep.meshes import (
     graded_unit_square_from_file,
     graded_unit_square_tensor,
 )
-from pdeopt.optimisers import (
+from meshdep.optimisers import (
     solve_with_hilbert_lbfgs,
     solve_with_scipy,
     solve_with_scipy_external_check,
 )
-from pdeopt.problems.poisson_control import solve_poisson_control
+from meshdep.problems.poisson_control import solve_poisson_control
 
 
-# The l^2 rows use SciPy (its native metric); the function-space row
-# uses the Hilbert-space L-BFGS in pdeopt.optimisers. TAO LMVM is kept
-# available but stalls on this problem and is not used by default.
+# The l^2 row uses SciPy (its native metric); the function-space row
+# uses the Hilbert-space L-BFGS in meshdep.optimisers.
 PANEL_A_ROWS = [
     ("scipy_lbfgs_ext", "l2"),
     ("hilbert_lbfgs", "L2"),
@@ -57,7 +56,7 @@ def _build_poisson_problem(mesh, alpha, riesz_map="l2"):
         u = Function(V)
         v = TestFunction(V)
         F = inner(grad(u), grad(v)) * dx - m * v * dx
-        # LU: see note in pdeopt.problems.poisson_control.
+        # LU: see note in meshdep.problems.poisson_control.
         solve(F == 0, u, bcs=bc,
               solver_parameters={"ksp_type": "preonly", "pc_type": "lu"})
         J = assemble(0.5 * (u - d)**2 * dx + 0.5 * alpha * m**2 * dx)
@@ -82,7 +81,6 @@ def run_panel(meshes, rows, alpha=1.0e-4, convergence_riesz_map="L2"):
             if optimiser_name == "tao_lmvm":
                 result = solve_poisson_control(
                     mesh, alpha=alpha, riesz_map=riesz_map,
-                    convergence_riesz_map=convergence_riesz_map,
                 )
             elif optimiser_name == "hilbert_lbfgs":
                 Jhat = _build_poisson_problem(

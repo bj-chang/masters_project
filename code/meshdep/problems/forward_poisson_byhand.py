@@ -2,8 +2,7 @@
 
 Solves ``-Delta u = m`` on ``(0,1)^2`` with ``u = 0`` on the boundary,
 with the manufactured solution ``u_exact = sin(pi x) sin(pi y)`` and
-source ``m = 2 pi^2 u_exact``. Reproduces the "by hand" half of the
-Section 6 convergence table.
+source ``m = 2 pi^2 u_exact``, all done 'by-hand'.
 """
 
 from argparse import ArgumentParser
@@ -18,8 +17,8 @@ import scipy.sparse.linalg as spla
 #   phi_2 = xi
 #   phi_3 = eta
 #
-# Their gradients with respect to the reference coordinates (xi, eta)
-# are constant on the reference triangle.
+# Their gradients with respect to (xi, eta) are constant on this triangle, so 
+# we can tabulate them here once, and then reuse these on every cell.
 REFERENCE_GRADS = np.array([
     [-1.0, -1.0],
     [ 1.0,  0.0],
@@ -27,9 +26,8 @@ REFERENCE_GRADS = np.array([
 ])
 
 
-# A simple degree-2 quadrature rule on the reference triangle.
-# The reference triangle has vertices (0,0), (1,0), (0,1) and area 1/2.
-# This three-point rule is exact for polynomials up to degree 2.
+# Degree 2 quadrature rule on the reference triangle (vertices (0,0), (1,0), 
+# (0,1) and area 1/2) - exact for polynomials up to degree 2.
 QUAD_POINTS = np.array([
     [1.0 / 6.0, 1.0 / 6.0],
     [2.0 / 3.0, 1.0 / 6.0],
@@ -44,30 +42,20 @@ QUAD_WEIGHTS = np.array([
 
 
 def make_unit_square_tri_mesh(nx, ny=None):
-    """Build a structured triangular mesh of the unit square.
+    """Structured triangular mesh of the unit square.
 
-    Parameters
-    ----------
-    nx, ny : int
-        Number of rectangular subdivisions in each direction. Each
-        rectangle is split into two triangles, giving a mesh with
-        ``2 * nx * ny`` triangles and ``(nx + 1) * (ny + 1)`` vertices.
-
-    Returns
-    -------
-    vertices : ndarray, shape (N, 2)
-        Coordinates of all mesh vertices.
-    triangles : ndarray, shape (T, 3)
-        Vertex indices for each triangle.
+    Slices the unit square into nx-by-ny rectangles and cuts each
+    rectangle along its diagonal into two triangles, giving 2*nx*ny
+    triangles and (nx+1)*(ny+1) vertices. Returns the vertex coordinates
+    and the triangle-to-vertex index array.
     """
-
     if ny is None:
         ny = nx
 
     xs = np.linspace(0.0, 1.0, nx + 1)
     ys = np.linspace(0.0, 1.0, ny + 1)
 
-    # Vertex ordering: loop over rows in y, then within each row over x.
+    # Vertex ordering - loop over rows in y, then loop each row over x.
     vertices = np.array([(x, y) for y in ys for x in xs], dtype=float)
 
     def vertex_id(i, j):
@@ -110,9 +98,9 @@ def boundary_nodes(vertices, tol=1.0e-12):
 def assemble_poisson_p1(nx, rhs_function):
     """Assemble the global system A u = b for the Poisson problem.
 
-    Uses P1 elements on a structured triangular mesh, with homogeneous
-    Dirichlet boundary conditions. Returns the mesh together with the
-    assembled (sparse) stiffness matrix and load vector.
+    Uses P1 elements on a structured triangular mesh with homogeneous
+    Dirichlet BCs. Returns the mesh together with the assembled sparse 
+    stiffness matrix and load vector.
     """
 
     vertices, triangles = make_unit_square_tri_mesh(nx)

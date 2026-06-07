@@ -11,7 +11,7 @@ import sys
 import numpy as np
 import pytest
 
-from pdeopt.problems.forward_poisson_byhand import solve_poisson_p1
+from meshdep.problems.forward_poisson_byhand import solve_poisson_p1
 
 
 def test_convergence():

@@ -1,6 +1,6 @@
 """Generate the six graded meshes for Table 2.2.
 
-Recipe mirrors pdeopt/meshes.py:graded_unit_square: a unit square with
+Recipe mirrors meshdep/meshes.py:graded_unit_square: a unit square with
 a coarse outer region (h <= 0.2) and a fine inner 0.4 x 0.4 sub-square
 in the lower-left corner with h <= 0.2 / ratio. Each mesh is exported
 to a Gmsh v2 .msh file that Firedrake can load directly.

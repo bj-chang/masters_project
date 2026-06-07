@@ -10,7 +10,7 @@ import pytest
 
 pytest.importorskip("firedrake")
 
-from pdeopt.problems.forward_poisson import solve_forward_poisson_mms
+from meshdep.problems.forward_poisson import solve_forward_poisson_mms
 
 
 def test_convergence():

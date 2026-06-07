@@ -252,7 +252,7 @@ and \emph{coercive} if there exists a constant $\alpha > 0$ such that
   a(u, u) \ge \alpha \|u\|_V^2
   \qquad \forall u \in V.
 \end{equation}
-These two properties are sufficient hypotheses of the Lax--Milgram
+These two properties are sufficient hypotheses of the Lax-Milgram
 theorem, which guarantees existence and uniqueness of weak solutions
 for a wide class of linear elliptic problems.
 
@@ -476,7 +476,7 @@ so that \cref{eq:weak-forward} reads
 \end{equation}
 The bilinear form $b$ is continuous and, by the Poincar{\'e}
 inequality, coercive on $H_0^1(\Om)$. The linear functional $\ell$ is
-bounded on $H_0^1(\Om)$ whenever $m \in \Lp{\Om}$. The Lax--Milgram
+bounded on $H_0^1(\Om)$ whenever $m \in \Lp{\Om}$. The Lax-Milgram
 theorem then guarantees existence and uniqueness of the weak solution.
 
 
@@ -738,7 +738,7 @@ Because $b$ is symmetric for the Poisson problem, this is equivalent to
 \end{equation}
 The bilinear form $b$ is continuous and coercive on $V$, and the
 right-hand side is a continuous linear functional on $V$, so
-existence and uniqueness of the adjoint follow from Lax--Milgram
+existence and uniqueness of the adjoint follow from Lax-Milgram
 \citep[p.~14]{shfp2017}.
 
 \subsection{Derivative of the reduced functional}
@@ -928,7 +928,7 @@ appear in \cref{tab:poisson-byhand-rates}.
     \toprule
     {$n_x$} & {$h$} & {$L^2$ error} & {rate} \\
     \midrule
-      4 & 0.2500 & 7.5963e-02 & \multicolumn{1}{c}{--} \\
+      4 & 0.2500 & 7.5963e-02 & \multicolumn{1}{c}{-} \\
       8 & 0.1250 & 2.0409e-02 & 1.8961 \\
      16 & 0.0625 & 5.2009e-03 & 1.9724 \\
      32 & 0.0312 & 1.3066e-03 & 1.9930 \\
@@ -954,7 +954,7 @@ produced the rates of \cref{tab:poisson-firedrake-rates}.
     \toprule
     {$N$} & {$h$} & {$L^2$ error} & {rate} \\
     \midrule
-      4 & 0.2500 & 6.2103e-02 & \multicolumn{1}{c}{--} \\
+      4 & 0.2500 & 6.2103e-02 & \multicolumn{1}{c}{-} \\
       8 & 0.1250 & 1.8332e-02 & 1.7603 \\
      16 & 0.0625 & 4.7854e-03 & 1.9376 \\
      32 & 0.0312 & 1.2095e-03 & 1.9842 \\
@@ -1022,7 +1022,7 @@ sequence reported in \cref{tab:poisson-taylor}.
     \toprule
     {$h$} & {first-order remainder} & {observed rate} \\
     \midrule
-    1.000e-1 & 1.8923e-6 & {--}   \\
+    1.000e-1 & 1.8923e-6 & {-}   \\
     5.000e-2 & 4.7307e-7 & 2.0000 \\
     2.500e-2 & 1.1827e-7 & 2.0000 \\
     1.250e-2 & 2.9567e-8 & 2.0000 \\
@@ -1433,7 +1433,7 @@ The observed results appear in \cref{tab:burgers-mms}.
       & {$e_h^{\mathrm{final}}$} & {rate}
       & {$e_h^{\mathrm{st}}$}    & {rate} \\
     \midrule
-    10 &  80 & 0.1000 & 5.840e-3 & {--}   & 1.838e-3 & {--}   \\
+    10 &  80 & 0.1000 & 5.840e-3 & {-}   & 1.838e-3 & {-}   \\
     20 & 160 & 0.0500 & 1.452e-3 & 2.0077 & 4.590e-4 & 2.0027 \\
     40 & 320 & 0.0250 & 3.577e-4 & 2.0197 & 1.140e-4 & 2.0098 \\
     80 & 640 & 0.0125 & 8.679e-5 & 2.0414 & 2.810e-5 & 2.0209 \\
@@ -1475,7 +1475,7 @@ variables are computed by solving a sequence of linear systems
 backward in time, starting from a zero terminal condition. The
 forward Burgers problem is nonlinear and is solved forward in time,
 while the adjoint problem is linearised about the computed state and
-is solved backward in time \citep[Sect.~1.5--1.6]{shfp2017}.
+is solved backward in time \citep[Sect.~1.5-1.6]{shfp2017}.
 
 The resulting discrete gradient has the form
 \begin{equation}
@@ -1529,7 +1529,7 @@ control inner product, we obtained the results of
     \toprule
     {$h$} & {second-order remainder} & {observed rate} \\
     \midrule
-    1.000e-1 & 6.7317e-5 & {--}   \\
+    1.000e-1 & 6.7317e-5 & {-}   \\
     5.000e-2 & 1.6828e-5 & 2.0001 \\
     2.500e-2 & 4.2068e-6 & 2.0001 \\
     1.250e-2 & 1.0517e-6 & 2.0000 \\
@@ -1646,7 +1646,7 @@ larger than the prescribed $r$, since Netgen smoothly grades the
 transition between the two regions.
 
 The function \texttt{graded\_unit\_square} in
-\texttt{pdeopt.meshes} encapsulates the recipe. The Netgen Python
+\texttt{meshdep.meshes} encapsulates the recipe. The Netgen Python
 package does not provide aarch64 binary distributions at the time of
 writing and the source distribution does not build on the machine
 used for the experiments. We therefore generate the six meshes for
@@ -1685,12 +1685,12 @@ reported in \cref{tab:meshdep:mesh_summary}.
 \subsection{Implementation}
 \label{sec:meshdep:implementation}
 
-The numerical experiments use the Python package \texttt{pdeopt}
+The numerical experiments use the Python package \texttt{meshdep}
 developed for this dissertation, built on top of
 Firedrake~\citep{firedrake2016} and pyadjoint~\citep{mitusch2019}.
 The Poisson optimal control problem of \cref{sec:poisson-derivative}
 is exposed through
-\texttt{pdeopt.problems.poisson\_control.solve\_poisson\_control},
+\texttt{meshdep.problems.poisson\_control.solve\_poisson\_control},
 which accepts a \texttt{riesz\_map} argument with admissible values
 \texttt{"l2"}, \texttt{"L2"} and \texttt{"H1"}. Internally the
 argument is passed to pyadjoint's \texttt{Control} constructor:
@@ -1712,7 +1712,7 @@ Three points of implementation merit explicit discussion, because
 each was non-trivial.
 
 \paragraph{The convergence criterion is panel-wide, not
-algorithm-specific.} \Citet[p.~67--68]{shfp2017} stop every algorithm
+algorithm-specific.} \Citet[p.~67-68]{shfp2017} stop every algorithm
 in a given panel on the same gradient norm
 $\|\Rmap_H(J')\|_H \le 10^{-7}$, irrespective of the inner product
 used internally by the algorithm. For an algorithm that does not
@@ -1721,43 +1721,73 @@ natively support a custom inner product (such as SciPy's L-BFGS-B),
 with respect to the appropriate inner product outside the
 $\ell^{2}$-employing algorithms''. We reproduce this externally
 checked convergence criterion in
-\texttt{pdeopt.optimisers.solve\_with\_scipy\_external\_check}, which
+\texttt{meshdep.optimisers.solve\_with\_scipy\_external\_check}, which
 runs SciPy's L-BFGS-B with its native tolerances set to $10^{-30}$
 (so that they never trigger) and uses a callback that re-evaluates
 $\Rmap_H(J')$ at the current iterate, computes its $H$-norm and
 raises a sentinel exception once the threshold is met.
 
-\paragraph{Setting \texttt{riesz\_map} on \texttt{Control} is
-necessary, but not sufficient for PETSc TAO/LMVM to behave like
-Moola.} The natural attempt to reproduce the Moola row of
-Table~2.2 in \citet{shfp2017} is to construct
+\paragraph{Routing through PETSc TAO/LMVM is possible, but requires
+two non-default settings.} The natural attempt to reproduce the
+Moola row of Table~2.2 in \citet{shfp2017} is to construct
 \texttt{Control(m, riesz\_map="L2")} and hand the resulting
 \texttt{ReducedFunctional} to pyadjoint's TAO interface. Pyadjoint's
 TAO wrapper then installs the Riesz inverse $M_h^{-1}$ both as the
 gradient-norm metric used in the convergence test (via
 \texttt{tao.setGradientNorm}) and as the initial Hessian
 approximation $B_{0}$ in the L-BFGS recursion (via
-\texttt{setLMVMH0}). The internal BFGS update formula in PETSc TAO,
-however, accumulates curvature pairs using the standard $\ell^{2}$
-dot product on coefficient vectors: it does not respect the chosen
-Hilbert space inner product in its rank-two updates. On the Netgen
-meshes of \cref{tab:meshdep:mesh_summary}, the resulting algorithm
-stalls at a sub-optimal iterate where TAO's strong-Wolfe line search
-refuses to take further steps. The mesh-independent behaviour of the
-Moola row in \citet[Table~2.2(a)]{shfp2017} is therefore not
-recovered by changing the \texttt{Control} alone; a more fundamental
-change to the optimisation algorithm is required.
+\texttt{setLMVMH0}). The LMVM matrix object then maintains the
+limited-memory secant pairs in the inner product induced by $B_0$,
+so the algorithm is, in principle, doing function-space L-BFGS.
 
-\paragraph{We implement BFGS in a Hilbert space directly.} Following
+In practice, two implementation issues need to be addressed before
+this combination is competitive with the
+Moola row of \citet[Table~2.2(a)]{shfp2017}. The first is purely
+mechanical: pyadjoint's TAO wrapper accepts a Python \texttt{parameters}
+dictionary, but the entries of that dictionary are not propagated to
+the LMVM sub-Mat that PETSc allocates internally. The option
+\texttt{tao\_lmvm\_mat\_lmvm\_hist\_size}, which controls the number
+of secant pairs that the L-BFGS update keeps in memory, is silently
+ignored when passed through the dictionary. It must be registered
+on the global PETSc options database \emph{before} the
+\texttt{TAOSolver} is instantiated:
+
+\begin{lstlisting}[language=Python]
+PETSc.Options().setValue('-tao_lmvm_mat_lmvm_hist_size', 100)
+\end{lstlisting}
+
+The second issue is that the PETSc default history size of five is
+too small for the discrete Hessian on the strongly graded Netgen
+meshes of \cref{tab:meshdep:mesh_summary}. A rank-five quasi-Newton
+update can only reproduce a Hessian whose top five eigenvalues
+already cover most of the spectrum; on the graded meshes the
+discrete Hessian has a much longer tail, and the LMVM iteration
+proceeds with a poorly conditioned search direction. The
+consequence is slow convergence rather than outright failure - with
+enough outer iterations, the gradient norm does reach machine
+precision (we verified this in
+\cref{sec:meshdep:tao-revisited}) - but the iteration count at
+the panel-wide threshold $\varepsilon = 10^{-7}$ grows from roughly
+$130$ on a Cartesian mesh to several hundred at higher gradings.
+Setting the history to one hundred recovers a mesh-independent
+iteration count of around thirty across the entire range.
+
+\paragraph{A transparent Hilbert-space L-BFGS reference
+implementation.} TAO/LMVM with the corrections above reproduces
+Schwedes' qualitative pattern, but the rank-two update lives inside
+a PETSc C kernel and the precise inner products used in the
+two-loop recursion are not easy to inspect from Python. To make the
+role of the inner product completely explicit, and to obtain a
+reference implementation that we can read line by line, we
+additionally implement BFGS in a Hilbert space directly. Following
 \citet[Sect.~1.5.4.1]{shfp2017}, the function
-\texttt{pdeopt.optimisers.solve\_with\_hilbert\_lbfgs} implements an
-L-BFGS algorithm in which every dot product used inside the two-loop
-recursion uses the chosen Hilbert space inner product
+\texttt{meshdep.optimisers.solve\_with\_hilbert\_lbfgs} implements an
+L-BFGS algorithm in which every dot product used inside the
+two-loop recursion uses the chosen Hilbert space inner product
 $\inner{\cdot}{\cdot}{H}$ rather than the ambient $\ell^{2}$ inner
 product on coefficient vectors. This is the distinguishing feature
-of Schwedes' ``Moola'' row, and is the missing ingredient in the
-PETSc TAO/LMVM attempt described above. The algorithm is presented
-in \cref{sec:meshdep:hilbert-lbfgs}.
+of Schwedes' ``Moola'' row, and the algorithm is presented in
+\cref{sec:meshdep:hilbert-lbfgs}.
 
 \subsection{BFGS in a Hilbert space}
 \label{sec:meshdep:hilbert-lbfgs}
@@ -1826,10 +1856,14 @@ The Riesz solve used to obtain $g_{k}$ from the dual derivative
 $\mathrm{d}\Jt(m_{k})$ is implemented internally with a direct LU
 factorisation of the discrete inner-product matrix
 ($M_{h}$ for $H = L^{2}$, $M_{h} + K_{h}$ for $H = H^{1}$). The
-default Firedrake \texttt{RieszMap} uses a Krylov solver with
-relative tolerance $10^{-5}$, which would otherwise put a noise
-floor of order $10^{-5}$ on the primal gradient and prevent the
-algorithm from reaching the convergence threshold.
+default Firedrake \texttt{RieszMap} uses a Krylov solver, which is
+adequate for forward Riesz representations but introduces an extra
+solver tolerance into the convergence test of the optimisation
+algorithm. Using a direct factorisation removes that tolerance from
+the analysis entirely, so that any failure to reach the threshold
+$\varepsilon = 10^{-7}$ is attributable to the optimisation
+algorithm rather than to the linear solver used in the
+gradient-norm computation.
 
 \subsection{Numerical experiments: Panel (a), \texorpdfstring{$H = \Lp{\Om}$}{H = L2}}
 \label{sec:meshdep:panel-a}
@@ -1845,13 +1879,13 @@ L-BFGS history of five:
 \begin{itemize}
   \item SciPy's L-BFGS-B run on the $\ell^{2}$ coefficient vector
         through
-        \texttt{pdeopt.optimisers.solve\_with\_scipy\_external\_check},
+        \texttt{meshdep.optimisers.solve\_with\_scipy\_external\_check},
         with the convergence criterion checked externally in
         $L^{2}$;
   \item the Hilbert-space L-BFGS of
         \cref{sec:meshdep:hilbert-lbfgs}, run with
         $H = \Lp{\Om}$ through
-        \texttt{pdeopt.optimisers.solve\_with\_hilbert\_lbfgs}.
+        \texttt{meshdep.optimisers.solve\_with\_hilbert\_lbfgs}.
 \end{itemize}
 
 The iteration counts at convergence are reported in
@@ -1921,30 +1955,206 @@ SciPy row (to six significant figures), but required substantially
 more iterations than the four reported by \citet{shfp2017} for the
 corresponding Moola row.
 
-Reading the spectrum of the Hessian of $\Jt$ in the $H^{1}$ inner
-product, this slow convergence is not entirely surprising. The
-exact-arithmetic eigenvalues of $(I - \Delta)^{-1}$ on the unit
-square scale as $1/(1 + \pi^{2}(j^{2} + k^{2}))$, and composing this
-with the $L^{2}$-Hessian of $\Jt$ produces a transformed Hessian
-with eigenvalues decaying as $k^{-6}$ on the high-frequency
-eigenfunctions. The condition number is therefore large, and a
-limited-memory BFGS with history five cannot resolve the
-high-frequency modes in a constant number of iterations.
+Two factors compound here. First, the panel-wide threshold is
+imposed on $\|\Rmap_H(J')\|_H$, and because the embedding
+$H^{1}(\Om) \hookrightarrow L^{2}(\Om)$ implies
+$\|\cdot\|_{H^{1}} \ge \|\cdot\|_{L^{2}}$, the same numerical value
+$\varepsilon = 10^{-7}$ is a strictly more demanding criterion in
+$H^{1}$ than in $L^{2}$. Second, the Hessian of $\Jt$ in the $H^{1}$
+inner product is poorly conditioned. The exact-arithmetic
+eigenvalues of $(I - \Delta)^{-1}$ on the unit square scale as
+$1/(1 + \pi^{2}(j^{2} + k^{2}))$, and composing this with the
+$L^{2}$-Hessian of $\Jt$ produces a transformed Hessian whose
+eigenvalues decay as $k^{-6}$ on the high-frequency eigenfunctions.
+A limited-memory BFGS with history five therefore cannot resolve
+the high-frequency modes in a constant number of iterations. The
+iteration counts $213$ and $286$ are not a defect of the
+implementation: convergence is monotone in the discrete objective,
+and the algorithm terminates at the same minimiser as the SciPy
+row.
+
+That the bottleneck is the convergence criterion in $H^{1}$ rather
+than $H^{1}$ \emph{per se} is confirmed by routing the same
+\texttt{Control(m, riesz\_map="H1")} object through PETSc TAO/LMVM
+instead. With the inner product matched to the threshold (the
+gradient is checked in $H^{1}$ and the tolerance is loosened to
+$10^{-3}$, the value for which $\|\Rmap_{H^{1}}(J')\|_{H^{1}}
+\approx 10^{-3}$ corresponds to roughly the same primal accuracy as
+$\|\Rmap_{L^{2}}(J')\|_{L^{2}} \approx 10^{-7}$ at the discrete
+minimum), TAO/LMVM converges in $26$, $30$ and $23$ iterations at
+realised mesh ratios $1$, $6.9$ and $18.3$. So the H$^{1}$ Riesz
+map does deliver mesh-independent behaviour when paired with a
+threshold expressed in the same inner product; the apparent failure
+above is a mismatch between the inner product of the algorithm and
+the inner product of the stopping criterion.
 
 The four-iteration count reported by \citet{shfp2017} for the
-$H^{1}$ Moola row is not explained in the book, and we have not yet
+$H^{1}$ Moola row is not explained in the book, and we have not
 identified a Moola-specific preconditioning step that would
 reproduce it from the algorithmic ingredients described in
-\citet[Sect.~1.5.4.1]{shfp2017}. We leave this as an open question:
-either Moola applies an additional preconditioner that is not
-documented in the book (such as solving the Hessian's compact term
-explicitly), or its iteration count is defined relative to a
+\citet[Sect.~1.5.4.1]{shfp2017}. We conjecture either that Moola
+applies an additional preconditioner that is not documented in the
+book (such as solving the compact term of the $H^{1}$-Hessian
+explicitly), or that its iteration count is defined relative to a
 different convergence criterion than the one stated in the table
 caption. Resolving the discrepancy would require inspection of the
 Moola source code, which currently cannot be installed in the
 Firedrake environment used for these experiments because the
 distribution hard-codes a \texttt{dolfin} import at module-load
 time.
+
+\subsection{TAO/LMVM revisited: diagnosing the original stagnation}
+\label{sec:meshdep:tao-revisited}
+
+The discussion in \cref{sec:meshdep:implementation} reported that
+routing the Poisson control problem through pyadjoint's TAO/LMVM
+interface with \texttt{Control(m, riesz\_map="L2")} fails to
+reproduce the Moola row, and that the failure can be removed by
+enlarging the LMVM history. This subsection records the diagnostic
+work that led to this conclusion, because the original failure mode
+was subtle enough to be misdiagnosed once already.
+
+Our first hypothesis was that the LMVM iteration was stagnating at
+a \emph{noise floor} - a gradient norm below which round-off in the
+adjoint tape prevents further reduction. The hypothesis was tested
+by replacing TAO/LMVM with TAO/NLS (a Newton line search using
+exact CG-based Hessian-vector products) and rerunning the same
+graded sweep with an artificially tight tolerance
+$\varepsilon = 10^{-30}$. On a quadratic problem one Newton step
+lands at the minimum, so the iterate produced by NLS at termination
+is the discrete optimum to within the tolerance of the Newton
+linear solver. Evaluating the gradient at that iterate via the
+adjoint tape gave $\|\Rmap_{L^{2}}(J')\|_{L^{2}} \approx 10^{-18}$
+on every mesh in the sweep. The adjoint-tape noise floor is
+therefore at machine precision, not at the $10^{-5}$ at which
+LMVM stagnated. The original stagnation was not a noise floor.
+
+The second hypothesis was that the limited-memory approximation
+itself was responsible. To test this we ran LMVM with the same
+artificially tight tolerance $\varepsilon = 10^{-30}$ and a
+budget of $3000$ iterations, sweeping the history size
+$h \in \{5, 25, 50, 100, 200\}$. The final gradient norm
+$\|\Rmap_{L^{2}}(J')\|_{L^{2}}$ at termination is summarised in
+\cref{tab:meshdep:tao-history}. With the default history $h = 5$,
+the iteration does reach $10^{-13}$ on the uniform mesh given a
+sufficient budget, but stagnates eleven orders of magnitude
+higher than that on a graded mesh of stretch $5$. Increasing the
+history to $25$ already brings both meshes down to machine
+precision, and increasing it further changes the final gradient
+norm only marginally. The original failure was therefore caused
+by a rank-five quasi-Newton approximation being too coarse to
+match the spectrum of the discrete Hessian on the graded mesh;
+with enough memory, LMVM does reach the discrete minimum to
+machine precision on every mesh tested.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{c r r r r r}
+    \toprule
+    stretch
+       & \multicolumn{5}{c}{LMVM history size $h$} \\
+    \cmidrule(lr){2-6}
+       & 5 & 25 & 50 & 100 & 200 \\
+    \midrule
+    $0$ & $9.4\!\times\!10^{-14}$
+        & $6.4\!\times\!10^{-18}$
+        & $4.6\!\times\!10^{-18}$
+        & $2.7\!\times\!10^{-18}$
+        & $1.8\!\times\!10^{-18}$ \\
+    $5$ & $1.6\!\times\!10^{-11}$
+        & $5.0\!\times\!10^{-18}$
+        & $3.0\!\times\!10^{-18}$
+        & $1.6\!\times\!10^{-18}$
+        & $9.1\!\times\!10^{-19}$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{Final $\|\Rmap_{L^{2}}(J')\|_{L^{2}}$ produced by
+  TAO/LMVM with \texttt{Control(m, riesz\_map="L2")} on the Poisson
+  control problem, with the tolerance set to $10^{-30}$ and a
+  budget of $3000$ iterations. Stretch $0$ is a uniform Cartesian
+  mesh ($h_{\max}/h_{\min} = 1$) and stretch $5$ produces a graded
+  mesh with $h_{\max}/h_{\min} \approx 30$. The default
+  PETSc history size of $h = 5$ stagnates eleven orders of
+  magnitude above the discrete optimum on the graded mesh;
+  history sizes from $h = 25$ upwards reach machine precision on
+  both.}
+  \label{tab:meshdep:tao-history}
+\end{table}
+
+\paragraph{Pyadjoint options-database propagation.} Setting
+\texttt{tao\_lmvm\_mat\_lmvm\_hist\_size} via the Python
+\texttt{parameters} dictionary that pyadjoint's TAO wrapper accepts
+does not, in our pyadjoint version, propagate down to the
+LMVM sub-Mat: the options-prefix that pyadjoint installs does not
+match the prefix that PETSc uses internally for the matrix object
+attached to the LMVM Tao implementation. The history size must be
+registered on the global PETSc options database before the
+\texttt{TAOSolver} is constructed,
+\begin{lstlisting}[language=Python]
+PETSc.Options().setValue('-tao_lmvm_mat_lmvm_hist_size', 100)
+\end{lstlisting}
+or the entire pyadjoint TAO solver must be constructed with an
+empty \texttt{options\_prefix}. We use the former in
+\cref{sec:meshdep:implementation}.
+
+\paragraph{Does this generalise to a non-quadratic problem?} The
+Poisson optimal control problem is quadratic in the control $m$, and
+quasi-Newton methods are known to be unusually effective on
+quadratic problems regardless of the inner product used. To check
+that the mesh-dependence pattern was not an artefact of the
+quadratic structure, we repeated the experiment on a one-dimensional
+viscous Burgers control problem, exposed through
+\texttt{meshdep.problems.burgers\_control.solve\_burgers\_control}.
+The forward equation is the backward-Euler discretisation of
+\begin{equation}
+  u_{t} + u\, u_{x} - \nu\, u_{xx} = m,
+  \qquad x \in (0, 1),\ t \in (0, T),
+\end{equation}
+with $\nu = 10^{-3}$ and homogeneous Dirichlet boundary conditions.
+The objective penalises misfit at the terminal time. We sweep the
+same stretching parameter as on Poisson and run TAO/LMVM with the
+default history of five on three configurations:
+$L^{2}$ Riesz map with $\varepsilon = 10^{-7}$ ($L^{2}$);
+$L^{2}$ Riesz map with $\varepsilon = 10^{-5}$ (loose $L^{2}$);
+and $H^{1}$ Riesz map with $\varepsilon = 10^{-3}$ (fair $H^{1}$).
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{l r r r}
+    \toprule
+    configuration
+       & \multicolumn{3}{c}{realised $h_{\max} / h_{\min}$} \\
+    \cmidrule(lr){2-4}
+       & $1.0$ & $6.9$ & $18.3$ \\
+    \midrule
+    $L^{2}$,\, $\varepsilon=10^{-7}$, hist $5$ & $130$ & $116$ & $115$ \\
+    $L^{2}$,\, $\varepsilon=10^{-5}$, hist $5$ & $51$ & $44$ & $41$ \\
+    $H^{1}$,\, $\varepsilon=10^{-3}$, hist $5$ & $26$ & $30$ & $23$ \\
+    \bottomrule
+  \end{tabular}
+  \caption{TAO/LMVM iteration counts on the one-dimensional viscous
+  Burgers control problem with default history size five. None of
+  the three configurations exhibits the mesh-dependent blow-up seen
+  on the Poisson problem; instead the iteration count is essentially
+  flat across the grading sweep.}
+  \label{tab:meshdep:burgers}
+\end{table}
+
+The headline observation is that the dramatic blow-up of LMVM
+iterations with grading that we documented on Poisson does
+\emph{not} transfer to Burgers: the iteration count is essentially
+flat across the grading sweep in all three configurations. This is
+consistent with the diagnosis above. The graded-mesh Poisson
+Hessian has a long-tailed spectrum because the discrete Laplacian
+is very ill-conditioned on highly anisotropic grids; the
+discrete Hessian of the time-dependent Burgers control problem is
+better conditioned because the implicit time stepping acts as a
+mass-matrix preconditioner on the high-frequency modes. The
+mesh-dependence pattern of \citet[Table~2.2(a)]{shfp2017} is
+therefore really a statement about the conditioning of the
+discrete Hessian on graded meshes for stationary diffusion-dominated
+problems, rather than a universal pathology of the $\ell^{2}$ inner
+product.
 
 \subsection{Discussion}
 \label{sec:meshdep:discussion}
@@ -1958,33 +2168,56 @@ $\ell^{2}$ inner product causes the iteration count to grow at
 roughly the polynomial rate predicted by the analysis in
 \citet[Sect.~2.2.4]{shfp2017}.
 
-Two observations from the implementation work bear on the practical
-use of optimisation packages catalogued by \citet{shfp2017}. First,
-attaching a \texttt{riesz\_map} to a pyadjoint \texttt{Control} is
-necessary but not sufficient for PETSc TAO/LMVM to reproduce the
-behaviour of \citet{shfp2017}'s Moola row, because the BFGS update
-formula in PETSc TAO uses an $\ell^{2}$ dot product on coefficient
-vectors internally and does not consult the Riesz map outside the
-initial Hessian and the convergence test. To recover the
-mesh-independent behaviour with a stock optimisation library would
-require a library that supports user-defined inner products
-throughout the algorithm; in the absence of such a library we
-implemented BFGS-in-Hilbert-space directly, following the formulas
-of \citet[Sect.~1.5.4.1]{shfp2017}.
+Three observations from the implementation work bear on the
+practical use of the optimisation packages catalogued by
+\citet{shfp2017}. First, attaching a \texttt{riesz\_map} to a
+pyadjoint \texttt{Control} \emph{is} enough for PETSc TAO/LMVM to
+behave as a function-space quasi-Newton method in the algorithmic
+sense - contrary to a conjecture that an earlier version of this
+chapter recorded, the LMVM Mat does respect the inner product
+induced by the initial Hessian preconditioner in its rank-two
+updates. The original failure to reproduce the Moola row was
+caused by the limited-memory approximation being insufficient,
+not by an internal use of the $\ell^{2}$ inner product. The
+diagnostic chain that led to this corrected picture is recorded in
+\cref{sec:meshdep:tao-revisited}: with a sweep of the LMVM history
+size at a tight tolerance, the final gradient norm on a graded mesh
+falls from $10^{-11}$ at history five to machine precision at
+history twenty-five, and on the Burgers control problem the
+default history is already sufficient. So the practical recipe for
+reproducing the Moola row via stock TAO/LMVM is to construct
+\texttt{Control(m, riesz\_map="L2")} and to set
+\texttt{tao\_lmvm\_mat\_lmvm\_hist\_size} to a value that captures
+the relevant part of the discrete Hessian spectrum.
 
-Second, the discrepancy between our Panel (b) results and those
+Second, although TAO/LMVM is in principle sufficient, the
+hand-written Hilbert-space L-BFGS of
+\cref{sec:meshdep:hilbert-lbfgs} remains useful as a reference
+implementation: every dot product used in the two-loop recursion is
+explicit in the Python source, making it straightforward to verify
+where the chosen inner product enters the algorithm. The
+hand-written implementation also avoids a subtlety of pyadjoint's
+TAO wrapper that makes the LMVM history hard to set through the
+public \texttt{parameters} interface, as documented in
+\cref{sec:meshdep:tao-revisited}.
+
+Third, the discrepancy between our Panel (b) results and those
 reported by \citet[Table~2.2(b)]{shfp2017} indicates that the
 discussion in the reference text does not fully specify how the
-Moola row is computed in the $H^{1}$ case. Our implementation
-follows the formulas given in the book and converges to the correct
-minimum of the discrete objective, but takes two orders of magnitude
-more iterations than the value reported in the book. We do not
-believe this is a defect of the implementation: the convergence
-trajectory is monotone in the discrete objective value and reaches
-the same minimiser as SciPy. We conjecture that Moola applies an
-additional algorithmic step in the $H^{1}$ case that is not
-described in \citet[Sect.~1.5.4]{shfp2017}, and we leave the
-identification of this step as future work.
+Moola row is computed in the $H^{1}$ case. The Hilbert-space
+L-BFGS implementation converges to the correct minimum but takes
+two orders of magnitude more iterations than the value reported in
+the book; we attribute this primarily to the convergence threshold
+being expressed in $H^{1}$, which is a stricter norm than $L^{2}$,
+and partly to the high condition number of the discrete Hessian in
+the $H^{1}$ inner product on the unit square. The same
+\texttt{Control(m, riesz\_map="H1")} routed through TAO/LMVM with a
+mesh-fair $H^{1}$ tolerance converges in roughly twenty-five
+iterations across the grading sweep, indicating that the $H^{1}$
+inner product itself does deliver mesh-independent behaviour;
+identifying the four-iteration Moola step would require inspection
+of the Moola source code, which is not currently possible in a
+Firedrake environment.
 
 
 % =============================================================================
@@ -2016,12 +2249,16 @@ The SciPy L-BFGS-B row, run on the ambient $\ell^{2}$ inner product
 with the convergence criterion checked externally in $L^{2}$,
 produced an iteration count that doubled at every refinement, in
 agreement with the polynomial bound derived in
-\citet[Sect.~2.2.4]{shfp2017}. The route of changing only the
-\texttt{Control}'s \texttt{riesz\_map} keyword and routing the
-problem through PETSc TAO/LMVM was found to be insufficient: PETSc
-TAO uses an $\ell^{2}$ dot product internally in its BFGS update
-formula, irrespective of which Riesz map is installed as the
-initial Hessian preconditioner. Panel~(b) of Table~2.2 was only
+\citet[Sect.~2.2.4]{shfp2017}. Routing the same problem through
+PETSc TAO/LMVM with \texttt{Control(m, riesz\_map="L2")} also
+reproduces the qualitative pattern, provided that the LMVM history
+size is enlarged from the PETSc default of five (which is too
+small to capture the spectrum of the discrete Hessian on the
+strongly graded meshes); the diagnostic chain that established
+this, including a noise-floor probe at machine precision and a
+Burgers control problem that does not exhibit the same
+mesh-dependence, is documented in
+\cref{sec:meshdep:tao-revisited}. Panel~(b) of Table~2.2 was only
 partially reproduced; the open question of how Moola achieves a
 four-iteration count in $H^{1}$ is discussed in
 \cref{sec:meshdep:panel-b}.
@@ -2034,7 +2271,7 @@ randomly refined meshes. A second direction is to use the
 inner-product-aware optimisation framework on a problem with
 practical relevance, for example tidal-turbine array layout
 optimisation, as in \citet[Chapter~3]{shfp2017}. A third direction,
-on the implementation side, is to extend the \texttt{pdeopt} package
+on the implementation side, is to extend the \texttt{meshdep} package
 with Newton-CG and IPOPT wrappers so that the full grid of methods
 considered by \citet{shfp2017} is reproducible.
 

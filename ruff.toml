@@ -1,0 +1,11 @@
+line-length = 79
+
+# Don't lint frozen-in-time artefacts.
+extend-exclude = [
+    "code/investigations/archive",
+    "code/old_code",
+    "code/old_diagnostic_files",
+]
+
+[lint]
+select = ["E501"]   # only line-too-long, nothing else

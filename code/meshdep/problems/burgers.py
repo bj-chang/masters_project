@@ -11,9 +11,9 @@ Euler in time, Newton's method for the nonlinear term, with a
 discrete adjoint and a Taylor test for the optimisation pipeline.
 
 Subcommands:
-  ``forward``     -- single forward solve at default settings
-  ``convergence`` -- MMS convergence study (Section 9.2)
-  ``taylor``      -- Taylor test for the gradient (Section 9.4)
+  ``forward``     - single forward solve at default settings
+  ``convergence`` - MMS convergence study 
+  ``taylor``      - Taylor test for the gradient 
 """
 
 from argparse import ArgumentParser
@@ -24,9 +24,7 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
 
-# ---------------------------------------------------------------
-# Mesh, mass and stiffness matrices, quadrature
-# ---------------------------------------------------------------
+# Mesh, mass and stiffness matrices, and quadrature
 
 # Two-point Gauss quadrature on the reference interval [-1, 1].
 GAUSS_POINTS = np.array([-1.0 / math.sqrt(3.0), 1.0 / math.sqrt(3.0)])
@@ -147,9 +145,7 @@ def assemble_convection_residual_and_jacobian(x, elements, U):
     return R_conv, J_conv
 
 
-# ---------------------------------------------------------------
 # Forward solve with a callable source term
-# ---------------------------------------------------------------
 
 def solve_forward_burgers_1d(
     num_elements=80,
@@ -163,13 +159,11 @@ def solve_forward_burgers_1d(
 ):
     """Solve the forward scalar viscous Burgers equation in 1D.
 
-    Uses P1 elements in space, backward Euler in time, and Newton's
-    method at each implicit time step. The source term is supplied as
-    a callable ``source_fn(x, t)``.
+    P1 in space, backward Euler in time, Newton at each implicit step.
+    The source ``source_fn(x, t)`` is supplied as a callable.
 
-    Returns a dictionary containing the mesh, the time grid, the
-    solution history at all time levels, the mass and stiffness
-    matrices, and the Newton iteration counts.
+    Returns a dict with the mesh, time grid, full state history, mass
+    and stiffness matrices, and per-step Newton iteration counts.
     """
 
     x, elements = make_uniform_mesh_1d(num_elements)
@@ -227,9 +221,7 @@ def solve_forward_burgers_1d(
     }
 
 
-# ---------------------------------------------------------------
 # Manufactured solution and convergence study
-# ---------------------------------------------------------------
 
 def manufactured_exact_solution(t, x):
     """Smooth exact solution u_exact(t, x) = exp(-t) sin(pi x)."""
@@ -362,9 +354,7 @@ def print_convergence_table(rows):
         )
 
 
-# ---------------------------------------------------------------
 # Forward solve with a control history (one nodal vector per step)
-# ---------------------------------------------------------------
 
 def build_control_history_from_callable(x, times, control_fn):
     """Sample a callable control m(x, t) at the mesh nodes for each implicit step.
@@ -394,9 +384,8 @@ def solve_forward_burgers_with_control(
 ):
     """Forward Burgers solve with a control supplied as a time-indexed array.
 
-    Compared with ``solve_forward_burgers_1d``, the source term is now
-    represented as nodal coefficients of a P1 control field per time
-    step. The load vector at each step is simply ``M @ m^n``.
+    Same as ``solve_forward_burgers_1d`` but the source is a P1
+    control field per time step, so the load is ``M @ m^n``.
     """
 
     x, elements = make_uniform_mesh_1d(num_elements)
@@ -463,9 +452,8 @@ def solve_forward_burgers_with_control(
     }
 
 
-# ---------------------------------------------------------------
+
 # Tracking objective, discrete adjoint, and L2-gradient
-# ---------------------------------------------------------------
 
 def evaluate_tracking_objective(result, target_history, alpha):
     """Evaluate the fully discrete tracking objective
@@ -499,9 +487,8 @@ def evaluate_tracking_objective(result, target_history, alpha):
 def solve_discrete_adjoint(result, target_history):
     """Solve the discrete adjoint equation backward in time.
 
-    The discrete adjoint is derived from the fully discrete forward
-    scheme directly, rather than discretising the continuous adjoint
-    PDE separately.
+    Derived from the fully discrete forward scheme directly, not from
+    discretising the continuous adjoint PDE.
     """
 
     x = result["x"]
@@ -560,9 +547,8 @@ def control_inner_product(control_a, control_b, M, dt):
     return float(total)
 
 
-# ---------------------------------------------------------------
 # Taylor test
-# ---------------------------------------------------------------
+
 
 def reduced_objective_only(control_history, num_elements, T, num_steps,
                            nu, u0_fn, target_history, alpha):
@@ -663,9 +649,7 @@ def print_taylor_table(rows):
         )
 
 
-# ---------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------
 
 def main():
     parser = ArgumentParser(description=__doc__.splitlines()[0])

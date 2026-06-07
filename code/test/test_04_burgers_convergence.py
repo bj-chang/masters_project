@@ -10,7 +10,7 @@ error to decay at rate close to 2.
 import sys
 import pytest
 
-from pdeopt.problems.burgers import convergence_test
+from meshdep.problems.burgers import convergence_test
 
 
 def test_burgers_convergence():

@@ -23,14 +23,14 @@ class _ConvergedExternally(Exception):
 
 def solve_with_tao(Jhat, tao_gatol=1.0e-7, tao_gttol=0.0, tao_grtol=0.0,
                    tao_max_it=50000, tao_max_funcs=50000, history=5,
-                   verbose=False, convergence_riesz_map=None):
+                   verbose=False):
     """Run TAO/LMVM on the reduced functional.
 
     The defaults put TAO on the absolute test ``|g|_H <= gatol`` only,
-    to match Schwedes' ``eps = 1e-7``. Setting ``convergence_riesz_map``
-    replaces TAO's gradient-norm metric after the solver is built, so
-    the convergence test uses that H regardless of which ``riesz_map``
-    was attached to the Control.
+    to match Schwedes' ``eps = 1e-7``. The H-norm used by the
+    convergence test (and by the LMVM initial Hessian) is the one
+    ``TAOSolver`` installs from the Control's ``riesz_map``; we do not
+    override it.
 
     Returns a dict with keys ``m_opt``, ``iterations``, ``final_J``
     and ``converged``.
@@ -49,18 +49,6 @@ def solve_with_tao(Jhat, tao_gatol=1.0e-7, tao_gttol=0.0, tao_grtol=0.0,
         parameters["tao_monitor"] = None
 
     solver = TAOSolver(MinimizationProblem(Jhat), parameters=parameters)
-
-    if convergence_riesz_map is not None:
-        from pyadjoint import Control
-        from pyadjoint.optimization.tao_solver import RieszMapMat
-        inner_control = Jhat.controls[0]
-        test_control = Control(inner_control.control,
-                               riesz_map=convergence_riesz_map)
-        test_minv = RieszMapMat([test_control], comm=solver.tao.getComm())
-        solver.tao.setGradientNorm(test_minv)
-        # Hold references so they outlive the solve.
-        solver._test_minv = test_minv
-        solver._test_control = test_control
 
     try:
         m_opt = solver.solve()

@@ -1,14 +1,14 @@
 """Extend Schwedes Table 2.2 beyond ``h_max / h_min = 128``.
 
-Same setup as ``table_2_2.py`` but with larger target ratios so we can
-check that the L^2 and H^1 rows stay flat while the l^2 row keeps
+Same setup as ``table_2_2.py`` but with larger target ratios, to
+confirm that the L^2 and H^1 rows stay flat while the l^2 row keeps
 growing.
 """
 
 from argparse import ArgumentParser
 
-from pdeopt.meshes import graded_unit_square
-from pdeopt.problems.poisson_control import solve_poisson_control
+from meshdep.meshes import graded_unit_square
+from meshdep.problems.poisson_control import solve_poisson_control
 
 
 ROWS = [

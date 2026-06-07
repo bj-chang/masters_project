@@ -13,14 +13,11 @@ alpha = 1.0e-4
 
 # Helper functions
 def graded_square(n=32, stretch=3.0):
-    """A unit square mesh with triangles bunched up toward (0, 0).
+    """Unit square mesh with triangles bunched up toward (0, 0).
 
-    :param n: The number of triangles along each side of the uniform base mesh.
-    :param stretch: How aggressively to bunch the triangles. ``stretch=0``
-        skips the remap and returns the uniform mesh; bigger values give
-        stronger grading (``3`` gives h_max/h_min ~ 20, ``5`` ~ 130).
-    :returns: a :class:`~firedrake.Mesh` whose triangles are bunched up
-        toward (0, 0).
+    ``n`` is the number of triangles per side of the uniform base mesh.
+    ``stretch=0`` returns the uniform mesh; bigger values give stronger
+    grading (``3`` gives h_max/h_min ~ 20, ``5`` ~ 130).
     """
     mesh = UnitSquareMesh(n, n)
     if stretch == 0.0:
@@ -34,12 +31,7 @@ def graded_square(n=32, stretch=3.0):
 
 
 def h_ratio(mesh):
-    """The cell size ratio h_max / h_min of a mesh.
-
-    :param mesh: The :class:`~firedrake.Mesh` to measure.
-    :returns: a ``float`` equal to the largest cell diameter divided by
-        the smallest.
-    """
+    """The cell size ratio h_max / h_min of a mesh."""
     DG0 = FunctionSpace(mesh, "DG", 0)
     h = Function(DG0).interpolate(CellDiameter(mesh)).dat.data_ro
     return h.max() / h.min()
@@ -47,11 +39,9 @@ def h_ratio(mesh):
 
 # TAO solver
 def run_tao(mesh):
-    """Solve the L^2 Poisson distributed-control problem on a mesh with TAO/LMVM.
+    """Solve the L^2 Poisson distributed-control problem on ``mesh`` with TAO/LMVM.
 
-    :param mesh: The :class:`~firedrake.Mesh` to solve on.
-    :returns: an ``int`` giving the number of TAO/LMVM iterations to
-        convergence.
+    Returns the number of TAO/LMVM iterations to convergence.
     """
     # Function space, variational form, target field and boundary conds
     x, y = SpatialCoordinate(mesh)

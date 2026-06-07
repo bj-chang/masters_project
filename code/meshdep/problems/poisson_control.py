@@ -6,21 +6,7 @@ Minimise ``J(u, m) = (1/2)|u-d|^2 + (alpha/2)|m|^2`` subject to
 
 from argparse import ArgumentParser
 
-from firedrake import (
-    DirichletBC,
-    Function,
-    FunctionSpace,
-    SpatialCoordinate,
-    TestFunction,
-    UnitSquareMesh,
-    assemble,
-    dx,
-    grad,
-    inner,
-    pi,
-    sin,
-    solve,
-)
+from firedrake import *
 from firedrake.adjoint import (
     Control,
     ReducedFunctional,
@@ -29,18 +15,16 @@ from firedrake.adjoint import (
     set_working_tape,
 )
 
-from pdeopt.optimisers import solve_with_tao
+from meshdep.optimisers import solve_with_tao
 
 
 def solve_poisson_control(mesh, alpha=1.0e-4, riesz_map="L2",
-                          tao_gatol=1.0e-7, verbose=False,
-                          convergence_riesz_map=None):
+                          tao_gatol=1.0e-7, verbose=False):
     """Tape the forward solve, build the reduced functional, run TAO.
 
-    ``riesz_map`` is the inner product on the control space:
-    ``'l2'``, ``'L2'`` or ``'H1'``.
-    ``convergence_riesz_map`` (optional) is the H used by TAO's
-    stopping test; defaults to the Control's own ``riesz_map``.
+    ``riesz_map`` is the inner product on the control space
+    (``'l2'``, ``'L2'`` or ``'H1'``). ``TAOSolver`` uses it for both
+    the LMVM initial Hessian and the convergence norm.
     """
 
     V = FunctionSpace(mesh, "CG", 1)
@@ -64,10 +48,7 @@ def solve_poisson_control(mesh, alpha=1.0e-4, riesz_map="L2",
                                  tape=tape)
     pause_annotation()
 
-    return solve_with_tao(
-        Jhat, tao_gatol=tao_gatol, verbose=verbose,
-        convergence_riesz_map=convergence_riesz_map,
-    )
+    return solve_with_tao(Jhat, tao_gatol=tao_gatol, verbose=verbose)
 
 
 def main():

@@ -34,3 +34,9 @@ venv/
 
 # Backups
 *_backup_*/
+
+# .bak files
+*.bak
+# Generated outputs from investigations
+code/investigations/output/
+code/investigations/plots/
