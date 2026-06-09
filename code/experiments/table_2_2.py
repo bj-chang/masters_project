@@ -1,4 +1,4 @@
-"""Reproduce Table 2.2 of Schwedes et al. (2017).
+"""Reproduce Table 2.2.
 
 For each ``(mesh, optimiser, riesz_map)`` row of a panel, prints the
 iteration count at convergence ``eps = 1e-7`` on

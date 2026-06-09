@@ -1,4 +1,4 @@
-"""Extend Schwedes Table 2.2 beyond ``h_max / h_min = 128``.
+"""Extend Table 2.2 beyond ``h_max / h_min = 128``.
 
 Same setup as ``table_2_2.py`` but with larger target ratios, to
 confirm that the L^2 and H^1 rows stay flat while the l^2 row keeps
