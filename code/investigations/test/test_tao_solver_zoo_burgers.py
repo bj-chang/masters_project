@@ -1,23 +1,4 @@
-"""TAO solver zoo on 1D Burgers control: which solvers are mesh-robust?
-
-The Burgers counterpart to ``test_tao_solver_zoo.py``. The 1D viscous
-Burgers optimal-control problem (Tikhonov-regularised, backward Euler
-in time, P1 in space) is run across the exponential-stretch sweep at
-every PETSc TAO solver that accepts a (possibly bound-constrained)
-unconstrained problem of this class.
-
-The dissertation finding is that the mesh-dependent LMVM blow-up
-observed on Poisson does NOT transfer to Burgers (sec. 10.8), so most
-of this table is expected to be flat across stretches. The interesting
-question is whether ``cg`` - which was strongly mesh-dependent on
-Poisson - is also flat here.
-
-Same caveats as the Poisson zoo apply: ``b*`` solvers run effectively
-unconstrained, ``bnk`` requires explicit bounds and so does not apply,
-and ``owlqn`` is L1-tuned and reports immediate convergence at m=0.
-
-Run from ~/masters_project/.
-"""
+"""TAO solver zoo on 1D Burgers control"""
 import numpy as np
 
 from firedrake import *
@@ -124,20 +105,17 @@ def run(Jhat, tao_type, extra_opts=None):
     return result
 
 
-# Ordered by expected runtime: Newton-class first, then quasi-Newton
-# with the sec. 10.4 history fix, then the ones that may grow with
-# grading. Options are cleared after each run.
 SOLVERS = [
-    # Fast: Newton-class.
+    
     ("nls",   "nls",   None),
     ("bnls",  "bnls",  None),
     ("bntr",  "bntr",  None),
     ("bntl",  "bntl",  None),
     ("bnk",   "bnk",   None),
-    # Medium: quasi-Newton with the sec. 10.4 history fix.
+    
     ("lmvm",  "lmvm",  {'-tao_lmvm_mat_lmvm_hist_size': 100}),
     ("bqnls", "bqnls", None),
-    # Slow: quasi-Newton at defaults; may grow with grading.
+    
     ("cg",    "cg",    None),
     ("owlqn", "owlqn", None),
 ]
