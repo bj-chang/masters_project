@@ -1,0 +1,98 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{parskip}
+\usepackage[none]{hyphenat}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage[colorlinks=true, linkcolor=blue!60!black, citecolor=blue!60!black, urlcolor=blue!60!black]{hyperref}
+\usepackage{natbib}
+
+\setcitestyle{authoryear,round}
+
+\newcommand{\Om}{\Omega}
+\newcommand{\Lp}[1]{L^{2}(#1)}
+\newcommand{\Rmap}{\mathcal{R}}
+\newcommand{\Jt}{\tilde{J}}
+
+\title{\vspace{-2em}Preliminary Report:\\
+Mesh Dependence in PDE-Constrained Optimisation\\
+with Firedrake, pyadjoint, and PETSc TAO}
+\author{Bert Jim Chang \\
+Supervisor: David A. Ham}
+\date{6 July 2026}
+
+\begin{document}
+
+\maketitle
+\vspace{-1.5em}
+
+\section{Introduction and context}
+
+Firedrake and its adjoint extension \texttt{pyadjoint} support several optimisers: SciPy for general use, ROL (the Rapid Optimisation Library) as the backend for the Fireshape shape-optimisation toolkit, and PETSc TAO (Toolkit for Advanced Optimisation) as a more recent option that recent Firedrake demos recommend for larger or parallel jobs\footnote{See e.g.\ the Firedrake full-waveform inversion demo, \url{https://www.firedrakeproject.org/demos/full_waveform_inversion.py.html}.}. For this to work, TAO has to be shown to behave correctly on the kind of problems Firedrake users solve: problems where the thing being optimised is a function on some domain, not a vector of numbers, and where the right way to measure angle and distance on the control space is a Hilbert-space inner product rather than the standard Euclidean one.
+
+This project aims to provide that empirical evidence, and works out how the pyadjoint interface should make the corresponding Riesz-map mechanism available to users. The test problem comes from \citet{shfp2017} in their SpringerBrief on mesh-dependence in PDE-constrained optimisation. Its Table 2.2 makes this pattern clear: an optimiser hard-coded to the Euclidean $\ell^{2}$ inner product produces iteration counts that grow polynomially with mesh grading, while one that uses the natural $L^{2}$ inner product stays essentially flat. The book demonstrates this with FEniCS and Moola. This project reproduces the same result with Firedrake, pyadjoint, and PETSc TAO, checks whether TAO can be made to match the flat Moola row, and extends the argument one level deeper into the inner Krylov solve of Newton's method.
+
+\section{Background and literature}
+
+The main reference text is \citet{shfp2017}. Its main result is that gradient-based optimisation over a Hilbert function space is mesh-independent if and only if the algorithm respects that Hilbert space's inner product. Chapter 1 gives the main foundational tools we need: the Riesz representation theorem, Fr\'echet derivatives, adjoint equations, and function-space versions of steepest descent, Newton-CG, and BFGS. Chapter 2 tests this claim experimentally, using the Table 2.2 setup introduced above.
+
+The underlying object is the Riesz map, the operator that turns a functional's derivative (which naturally sits in the dual space $H^{*}$) into an element of $H$ that the optimiser can use as a search direction. In the discrete $L^{2}$ setting, this map is $\Rmap_{L^{2}} = M_{h}^{-1}$, the inverse of the assembled Galerkin mass matrix (\citet[Eq.~1.125]{shfp2017}). Applying $M_{h}^{-1}$ converts the raw coefficient gradient into its $L^{2}$ primal form, and skipping it leaves the mesh-scaling factor in $M_{h}$ uncancelled, which produces the polynomial growth on graded meshes (\citet{hinze2009}).
+
+The same argument applies to preconditioning Krylov solvers, one level deeper than the outer optimisation. \citet{kirby2010} shows that discrete finite element operators are mesh-independently conditioned when preconditioned with the Riesz map of the correct Hilbert space. Schwedes cites this as a pointer to the Krylov version of the same idea (\S 1.3.3 and \S 2.1) but does not run an inner-Krylov experiment: Chapter 2's experiments are all outer L-BFGS. Newton's method has an outer Newton loop and an inner Krylov solve on the reduced Hessian, so the same reasoning predicts the inner solve inherits its own mesh-dependence unless preconditioned with $M_{h}^{-1}$. This project fills that gap on Schwedes' Poisson test problem.
+
+\section{Objectives}
+
+The overall goal is to give Firedrake the empirical evidence and the interface design it needs to use PETSc TAO more widely as an optimisation backend. This splits into three main objectives.
+
+\begin{enumerate}
+\setlength{\itemsep}{2pt}
+  \item \textbf{Show that TAO works correctly at the outer level.} Reproduce panel (a) of Table 2.2 in \citet{shfp2017}, this time in the Firedrake and pyadjoint stack. Show that the SciPy row grows with the mesh ratio and that our own hand-written Hilbert-space L-BFGS row stays flat. Find the settings that make TAO's \texttt{lmvm} solver match the flat row, and try the other TAO solvers (\texttt{nls}, \texttt{bqnls}, \texttt{cg}) to see which ones behave well and which do not. This gives Firedrake a clear answer to the question ``does TAO handle function-space optimisation correctly, and under what settings?''.
+  \item \textbf{Fix the mesh-dependence at the inner solver level.} TAO's \texttt{nls} solver runs Newton's method, which takes two outer iterations on this problem because the Poisson problem is quadratic. Each Newton step then solves a linear system inside itself, and that inner solve has its own iteration count that the outer table does not show. Show that this inner count grows with mesh grading, and that adding an $L^{2}$ Riesz-map preconditioner to the inner solve fixes it. The book does not test this level, so this is the main novel piece of the project.
+  \item \textbf{Work out the pyadjoint interface.} What should pyadjoint's \texttt{TAOSolver} wrapper actually do? Three options: (a) apply the Riesz map automatically when the solver is built, (b) make the user ask for it explicitly with \texttt{Control(m, riesz\_map="L2")}, or (c) some hybrid of the two. Each option has pros and cons, especially when a user wants to pass in their own preconditioner. Determine which option makes the most sense and why.
+\end{enumerate}
+
+\section{Methods}
+
+The model problem is the Poisson optimal control problem from \citet[Sect. 1.6]{shfp2017}, in which we look for a source term $m \in \Lp{\Om}$ that minimises
+\[
+    \Jt(m) = \tfrac{1}{2} \|u - d\|_{\Lp{\Om}}^{2}
+      + \tfrac{\alpha}{2} \|m\|_{\Lp{\Om}}^{2}
+    \quad
+    \text{subject to} \quad {-\Delta u = m} \text{ on } \Om,\ u = 0 \text{ on } \partial\Om.
+\]
+We derive the reduced gradient by hand using the adjoint method, and compute it at run time using pyadjoint, which records a tape of the forward solve and plays it back in reverse. Both the forward and adjoint solves use $P_{1}$ continuous Lagrange finite elements. We verify the implementation two ways: a manufactured-solution convergence test, showing second-order convergence in the $\Lp{\Om}$ error, and a Taylor test on the reduced gradient, showing second-order decay of the first-order remainder. After this, the scalar viscous Burgers optimal control problem is the natural next step to test.
+
+We build graded meshes on the unit square using Netgen \citep{schoeberl1997} at target ratios $r \in \{4, 8, 16, 32, 64, 128\}$, following the method in \citet[Sect. 2.3]{shfp2017}. The realised ratios of $h_{\max}/h_{\min}$, measured from Firedrake's \texttt{CellDiameter} field, come out at roughly 1.5 to 2 times the target.
+
+For objective 1 we run two outer optimisers side by side. The first is a hand-written Hilbert-space L-BFGS following \citet[Sect. 1.5.4.1]{shfp2017}, written in Python and fully transparent, which acts as our reference. The second is PETSc TAO through pyadjoint's \texttt{TAOSolver} wrapper, with \texttt{Control(m, riesz\_map="L2")} using $M_{h}$ as the LMVM initial-Hessian seed. For objective 2 we write a plain PETSc Python PC (\texttt{RieszMapPCContext}), following the preconditioner pattern in the Firedrake saddle-point systems demo\footnote{\url{https://www.firedrakeproject.org/demos/saddle_point_systems.py.html}.}. It assembles the mass matrix, factorises it once by LU, and applies $M_{h}^{-1}$ on every inner KSP call, attached programmatically after \texttt{TAOSolver} is built.
+
+\section{Preliminary results}
+
+\paragraph{Panel (a) reproduction.} On four Netgen graded meshes at target ratios $r \in \{4, 16, 64, 128\}$, our hand-written Hilbert-space L-BFGS converged to $\|\Rmap_{L^{2}}(J')\|_{L^{2}} \le 10^{-7}$ in 8, 7, 8, and 9 iterations. The SciPy L-BFGS-B row (run in $\ell^{2}$, with the convergence check done externally in $L^{2}$) produced counts of 46, 195, and 786 for $r \in \{4,16,64\}$, growing roughly linearly with the mesh grading. TAO's \texttt{lmvm} solver reproduced the flat row once we raised the default history length of five up to 100. At the default value, the rank-five quasi-Newton update did not capture enough of the discrete-Hessian spectrum. Across the wider TAO family, the Newton-class solvers and \texttt{lmvm}-at-100 were mesh-independent, whereas optimisers \texttt{bqnls} and \texttt{cg} were not.
+
+\paragraph{Inner-CG mesh dependence and its fix.} TAO's \texttt{nls} solver takes two outer Newton iterations regardless of the mesh, because the Poisson problem is quadratic. Each Newton step, however, solves a linear system using an inner CG, and the outer table does not show that inner count. On the same mesh sweep, the total inner-CG count grew from 56 at $r = 4$ to 807 at $r = 128$. When we installed the $L^{2}$ Riesz-map preconditioner on TAO's inner KSP, the count stayed flat at 15 across the whole sweep. This is the panel (a) result carried down to the inner Krylov solve; it is written up as \S 10.8 of the dissertation.
+
+\section{Work plan for the remaining time}
+
+\begin{itemize}
+\setlength{\itemsep}{2pt}
+  \item \textbf{Diagnose bqnls's line search.} TAO's \texttt{bqnls} solver grows with the mesh at its default history of five. Two things could be going wrong: it could be the same history-size issue that stock \texttt{lmvm} had, or the projected line search could be doing something wrong. The plan is to turn on \texttt{tao\_ls\_monitor} and rerun the mesh sweep. The output should distinguish between the two.
+  \item \textbf{$H^{1}$ Riesz-map preconditioner sweep.} The preconditioner module already handles the $H^{1}$ form. Adding an $H^{1}$ column to the inner-CG table would round off the story symmetrically with panels (a) and (b) of Table 2.2.
+  \item \textbf{Write up the interface design.} Draft a short document that lays out how the pyadjoint \texttt{TAOSolver} wrapper should expose the Riesz-map mechanism to users. This is the deliverable for objective 3, and it is what would help Firedrake use TAO more widely.
+\end{itemize}
+
+\vspace{-0.5em}
+
+{\footnotesize
+\bibliographystyle{plainnat}
+\bibliography{preliminary_report}
+}
+
+\end{document}
