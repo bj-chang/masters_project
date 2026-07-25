@@ -204,7 +204,7 @@ Let $\Om \subset \R^d$, with $d \in \{1, 2, 3\}$, be a bounded open domain with 
   \|u\|_{\Lp{\Om}} := \inner{u}{u}{\Lp{\Om}}^{1/2}.
 \end{equation}
 
-\begin{defn}[Sobolev space \texorpdfstring{$H^1(\Om)$}{H1}] The Sobolev space $H^1(\Om)$ is defined by
+\begin{defn}[Sobolev space \texorpdfstring{$H^1(\Om)$}{H1}] The \emph{Sobolev space} $H^1(\Om)$ is defined by
 \begin{equation}
   H^1(\Om) := \left\{ u \in \Lp{\Om} \;\middle|\;
                       \grad u \in (\Lp{\Om})^d \right\}.
@@ -225,7 +225,7 @@ This norm comes from the $H^1$ inner product,
 
 To also incorporate homogeneous Dirichlet boundary conditions into the function space itself, we also want to introduce the subspace $H_0^1(\Om)$.
 
-\begin{defn}[Sobolev space \texorpdfstring{$H_0^1(\Om)$}{H10}] The space $H_0^1(\Om)$ is defined as the closure of $C_c^\infty(\Om)$ in the $H^1(\Om)$ norm.
+\begin{defn}[Sobolev space \texorpdfstring{$H_0^1(\Om)$}{H10}] The \emph{Sobolev space} $H_0^1(\Om)$ is defined as the closure of $C_c^\infty(\Om)$ in the $H^1(\Om)$ norm.
 \end{defn}
 
 Here, $C_c^\infty(\Om)$ denotes the smooth functions with compact support in $\Om$ (i.e., smooth functions which vanish in a neighbourhood of $\dom$). Taking the \emph{closure} of this set in the $H^1$ norm means we also include every function that can be approximated arbitrarily well, in the $H^1$ norm, by such smooth functions. Functions in $H_0^1(\Om)$ are zero on the boundary $\dom$, which makes this the natural solution space for problems with homogeneous Dirichlet boundary conditions.
@@ -262,7 +262,7 @@ As we see later in this dissertation, the mesh-dependence story here is, at its 
 
 Let $H$ be a Hilbert space with inner product $\inner{\cdot}{\cdot}{H}$.
 
-\begin{defn}[Dual space] The dual space of $H$, denoted $H^{*}$, is the space of all continuous linear functionals on $H$ \citep[p.~21]{shfp2017}:
+\begin{defn}[Dual space] The \emph{dual space} of $H$, denoted $H^{*}$, is the space of all continuous linear functionals on $H$ \citep[p.~21]{shfp2017}:
 \begin{equation}
   H^{*} := \bigl\{ f : H \to \R \;\big|\;
                     f \text{ is linear and continuous} \bigr\}.
@@ -403,7 +403,7 @@ Substituting this into \cref{eq:weak-derivation-step1} gives
 and this identity must hold for all test functions $v \in H_0^1(\Om)$. We collect the result into the following definition.
 
 \begin{defn}[Weak formulation of the forward Poisson problem]
-\label{defn:weak-poisson} Let $m \in \Lp{\Om}$. The weak formulation of \cref{eq:strong-forward} is: find $u \in H_0^1(\Om)$ such that
+\label{defn:weak-poisson} Let $m \in \Lp{\Om}$. The \emph{weak formulation} of \cref{eq:strong-forward} is: find $u \in H_0^1(\Om)$ such that
 \begin{equation}
   \label{eq:weak-forward}
   \int_{\Om} \grad u \cdot \grad v \dx
@@ -453,7 +453,7 @@ Throughout the Poisson sections, we set
 Let $d \in \Lp{\Om}$ be a given desired state and let $\alpha > 0$.
 
 \begin{defn}[Poisson objective functional]
-\label{defn:objective} The objective functional $J : V \times \Mspace \to \R$ is defined by
+\label{defn:objective} The \emph{objective functional} $J : V \times \Mspace \to \R$ is defined by
 \begin{equation}
   \label{eq:objective-J}
   J(u, m)
@@ -470,7 +470,7 @@ The first term measures the misfit between the state $u$ and the desired state $
 Combining \cref{defn:objective} with the weak state equation \cref{eq:weak-forward-compact}, we get that the PDE-constrained optimisation problem reads as follows.
 
 \begin{defn}[Poisson PDE-constrained optimisation problem]
-\label{defn:full-problem} Find $(u, m) \in V \times \Mspace$ minimising
+\label{defn:full-problem} The \emph{Poisson PDE-constrained optimisation problem} is to find $(u, m) \in V \times \Mspace$ minimising
 \begin{equation}
   \min_{(u, m) \in V \times \Mspace} J(u, m)
 \end{equation}
@@ -489,13 +489,13 @@ The problem of \cref{defn:full-problem} is a \emph{constrained} minimisation: $u
 For each $m \in \Mspace$ there exists a unique state $u \in V$ satisfying the state equation, so we may view the state as a function of the control. To make this precise, we name the map that sends each control to its state as the solution operator: 
 
 \begin{defn}[Poisson solution operator]
-\label{defn:solution-operator} The solution operator $S : \Mspace \to V$ assigns to each $m \in \Mspace$ the unique solution $S(m) := u(m) \in V$ of the weak state equation associated with $m$.
+\label{defn:solution-operator} The \emph{solution operator} $S : \Mspace \to V$ assigns to each $m \in \Mspace$ the unique solution $S(m) := u(m) \in V$ of the weak state equation associated with $m$.
 \end{defn}
 
 Using the solution operator we eliminate the state from the optimisation problem.
 
 \begin{defn}[Poisson reduced functional]
-\label{defn:reduced-functional} The reduced functional $\Jt : \Mspace \to \R$ is defined by
+\label{defn:reduced-functional} The \emph{reduced functional} $\Jt : \Mspace \to \R$ is defined by
 \begin{equation}
   \Jt(m) := J(S(m), m) = J(u(m), m).
 \end{equation}
@@ -537,13 +537,15 @@ this becomes
   + \partial_m J(u, m;\, \delta m).
 \end{equation}
 
+Evaluating this derivative requires the partial derivatives of two different objects, which we compute separately in the next two subsections. The state variation $\delta u$ is not a free quantity: it is fixed by the state equation, so determining it requires the partial derivatives of the forward model operator $F$ (the constraint), which we treat first in \cref{sec:deriv:tangent}. The two remaining terms are partial derivatives of the objective functional $J$ (the cost), which we compute in \cref{sec:deriv:Jpartial}.
+
 \subsection{Tangent linear equation}
 \label{sec:deriv:tangent}
 
 To compute $\delta u$ we differentiate the state equation. We define a \emph{forward model operator} that encodes the residual of the weak problem.
 
 \begin{defn}[Forward model operator]
-\label{defn:forward-operator} The forward model operator is defined as the residual of the weak state equation:
+\label{defn:forward-operator} The \emph{forward model operator} is defined as the residual of the weak state equation:
 \begin{equation}
   F(u, m;\, v) := b(u, v) - \inner{m}{v}{\Lp{\Om}}.
 \end{equation}
@@ -556,9 +558,7 @@ The weak state equation can then be written as $F(u(m), m;\, v) = 0$ for all $v 
   + \partial_m F(u, m;\, \delta m, v) = 0
   \qquad \forall v \in V.
 \end{equation}
-We compute the two partial derivatives.
-
-First, the derivative with respect to $u$. For $\varepsilon \in \R$, set $u_\varepsilon := u + \varepsilon \delta u$. Using linearity of $b$ in its first argument,
+We compute the two partial derivatives of the forward model operator $F$. First, we want the derivative with respect to $u$. For $\varepsilon \in \R$, set $u_\varepsilon := u + \varepsilon \delta u$. Using linearity of $b$ in its first argument,
 \begin{equation}
   F(u_\varepsilon, m;\, v)
   = b(u, v) - \inner{m}{v}{\Lp{\Om}}
@@ -575,7 +575,7 @@ and taking $\varepsilon \to 0$ gives
   \partial_u F(u, m;\, \delta u, v) = b(\delta u, v).
 \end{equation}
 
-Next, the derivative with respect to $m$. By the analogous argument, perturbing $m$ in the direction $\delta m$,
+Next, the derivative with respect to $m$. By the analogous argument, perturbing $m$ in the direction $\delta m$, we get
 \begin{equation}
   \label{eq:partial-Fm}
   \partial_m F(u, m;\, \delta m, v)
@@ -596,14 +596,14 @@ Combining \cref{eq:partial-Fu,eq:partial-Fm} with \cref{eq:tlm-implicit} gives t
 \subsection{Partial derivatives of the objective functional}
 \label{sec:deriv:Jpartial}
 
-First, the derivative of $J$ with respect to $u$. Setting $u_\varepsilon := u + \varepsilon v$ and expanding,
+Now we compute the partial derivatives of the the objective functional $J$. First, the derivative of $J$ with respect to $u$. Setting $u_\varepsilon := u + \varepsilon v$ and expanding, we get
 \begin{equation}
   J(u_\varepsilon, m)
   = J(u, m)
   + \varepsilon \inner{u - d}{v}{\Lp{\Om}}
-  + \tfrac{\varepsilon^2}{2} \|v\|_{\Lp{\Om}}^2.
+  + \tfrac{\varepsilon^2}{2} \|v\|_{\Lp{\Om}}^2,
 \end{equation}
-Therefore
+and so
 \begin{equation}
   \label{eq:partial-Ju}
   \partial_u J(u, m;\, v) = \inner{u - d}{v}{\Lp{\Om}}.
@@ -614,9 +614,9 @@ Next, the derivative of $J$ with respect to $m$. Setting $m_\varepsilon := m + \
   J(u, m_\varepsilon)
   = J(u, m)
   + \alpha \varepsilon \inner{m}{\delta m}{\Lp{\Om}}
-  + \tfrac{\alpha \varepsilon^2}{2} \|\delta m\|_{\Lp{\Om}}^2.
+  + \tfrac{\alpha \varepsilon^2}{2} \|\delta m\|_{\Lp{\Om}}^2,
 \end{equation}
-Therefore
+giving
 \begin{equation}
   \label{eq:partial-Jm}
   \partial_m J(u, m;\, \delta m) = \alpha \inner{m}{\delta m}{\Lp{\Om}}.
@@ -625,10 +625,10 @@ Therefore
 \subsection{Adjoint problem}
 \label{sec:deriv:adjoint}
 
-To evaluate the derivative of $\Jt$ without solving the tangent linear equation for every direction $\delta m$, we introduce an adjoint variable \citep[p.~33]{shfp2017}. The adjoint equation reverses the direction of the state equation: where the state equation maps the control forward to the state, the adjoint equation propagates the sensitivity of the objective backward, to the control.
+We now introduce the adjoint variable that carries out this cancellation \citep[p.~33]{shfp2017}. The adjoint equation reverses the direction of the state equation: where the state equation maps the control forward to the state, the adjoint equation propagates the sensitivity of the objective backward, to the control. \ins{The only obstacle to evaluating $\mathrm{d}\Jt$ cheaply is the term $\partial_u J(u, m;\, \delta u)$ in the chain rule, which drags in the direction-specific state variation $\delta u$. The adjoint is defined precisely to remove it, as we carry out in \cref{sec:deriv:reduced}.} First we define the adjoint variable: 
 
 \begin{defn}[Adjoint variable]
-\label{defn:adjoint} The adjoint variable $\lambda \in V$ is the unique solution of
+\label{defn:adjoint} The \emph{adjoint variable} $\lambda \in V$ is the unique solution of
 \begin{equation}
   \partial_u F(u, m;\, \lambda, v)
   = \partial_u J(u, m;\, v)
@@ -636,38 +636,37 @@ To evaluate the derivative of $\Jt$ without solving the tangent linear equation 
 \end{equation}
 \end{defn}
 
-Substituting \cref{eq:partial-Fu,eq:partial-Ju} into the definition gives us
+Substituting \cref{eq:partial-Fu,eq:partial-Ju} into the definition gives the adjoint equation for the Poisson problem in concrete form.
+
+\begin{prop}[Adjoint equation]
+\label{prop:adjoint} The adjoint variable $\lambda \in V$ satisfies
 \begin{equation}
   \label{eq:adjoint-implicit}
   b(\lambda, v) = \inner{u - d}{v}{\Lp{\Om}}
   \qquad \forall v \in V.
 \end{equation}
-Because $b$ is symmetric for the Poisson problem, this is equivalent to
-\begin{equation}
-  \label{eq:adjoint-symmetric}
-  b(v, \lambda) = \inner{u - d}{v}{\Lp{\Om}}
-  \qquad \forall v \in V.
-\end{equation}
-The bilinear form $b$ is continuous and coercive on $V$, and the right-hand side is a continuous linear functional on $V$, so existence and uniqueness of the adjoint follow from Lax-Milgram \citep[p.~14]{shfp2017}.
+\end{prop}
+
+\ins{The \emph{adjoint problem} is to find the $\lambda \in V$ that satisfies this adjoint equation. It is a single Poisson-type solve: the same bilinear form $b$ as the forward problem of \cref{defn:weak-poisson}, but driven by the misfit $u - d$ in place of the control $m$.} The bilinear form $b$ is continuous and coercive on $V$, and the right-hand side is a continuous linear functional on $V$, so existence and uniqueness of the adjoint follow from Lax-Milgram \citep[p.~14]{shfp2017}. \ins{Its one solution $\lambda$ is all we need to evaluate the derivative of $\Jt$ in every direction, which is what we do next.}
 
 \subsection{Derivative of the reduced functional}
-\label{sec:deriv:reduced}
+\label{sec:deriv:reduced} 
 
-Substituting \cref{eq:partial-Ju,eq:partial-Jm} into the chain-rule expression \cref{eq:chain-rule-shorter} gives
+\ins{With the objective partials and the adjoint now, we can get the derivative of $\Jt$ and eliminate the state variation $\delta u$.} Substituting \cref{eq:partial-Ju,eq:partial-Jm} into the chain-rule expression \cref{eq:chain-rule-shorter} gives
 \begin{equation}
   \mathrm{d}\Jt(m;\, \delta m)
   = \inner{u - d}{\delta u}{\Lp{\Om}}
   + \alpha \inner{m}{\delta m}{\Lp{\Om}}.
 \end{equation}
-We now eliminate $\delta u$ using the adjoint and tangent linear equations. Choosing $v = \delta u$ in \cref{eq:adjoint-symmetric},
+We now eliminate $\delta u$ using the adjoint and tangent linear equations. Choosing $v = \delta u$ in \cref{eq:adjoint-implicit} and using the symmetry of $b$ (as we have that $b(u, v) = b(v, u)$ since $\grad u \cdot \grad v = \grad v \cdot \grad u$),
 \begin{equation}
   \inner{u - d}{\delta u}{\Lp{\Om}} = b(\delta u, \lambda).
 \end{equation}
-Choosing $v = \lambda$ in \cref{eq:tangent-linear},
+Choosing $v = \lambda$ in \cref{eq:tangent-linear}, we get that 
 \begin{equation}
-  b(\delta u, \lambda) = \inner{\delta m}{\lambda}{\Lp{\Om}}.
+  b(\delta u, \lambda) = \inner{\delta m}{\lambda}{\Lp{\Om}},
 \end{equation}
-Hence
+and so 
 \begin{equation}
   \label{eq:dJtilde-pre-riesz}
   \mathrm{d}\Jt(m;\, \delta m)
@@ -680,10 +679,12 @@ where $u = u(m)$ is the state corresponding to $m$ and $\lambda$ is the adjoint 
 \subsection{The \texorpdfstring{$L^2$}{L2}-gradient}
 \label{sec:deriv:l2grad}
 
-The reduced derivative \cref{eq:dJtilde-pre-riesz} is a continuous linear functional acting on directions $\delta m \in \Mspace$, hence an element of the dual space $\Mspace^{*}$. By the Riesz representation theorem (\cref{thm:riesz}), there exists a unique element of $\Mspace$ representing it.
+\ins{We now have the derivative $\mathrm{d}\Jt$, but a gradient-based method cannot use it as it stands. These methods improve the control by stepping along a search direction, so it needs an actual element of the control space $\Mspace$ to add to the current control $m$, whereas the derivative is a functional that acts on directions rather than being one itself. So, we need to convert it into a genuine direction in $\Mspace$, and it is in this conversion that the choice of inner product matters.}
+
+The reduced derivative \cref{eq:dJtilde-pre-riesz} is a continuous linear functional acting on directions $\delta m \in \Mspace$, which means that it is an element of the dual space $\Mspace^{*}$. By the Riesz representation theorem (\cref{thm:riesz}), there exists a unique element of $\Mspace$ representing it.
 
 \begin{defn}[$L^2$-gradient]
-\label{defn:l2gradient} Let $\Rmap_{L^2} : \Mspace^{*} \to \Mspace$ denote the Riesz map associated with the $\Lp{\Om}$ inner product. The $L^2$-gradient of $\Jt$ at $m$ is defined by
+\label{defn:l2gradient} Let $\Rmap_{L^2} : \Mspace^{*} \to \Mspace$ denote the Riesz map associated with the $\Lp{\Om}$ inner product. The \emph{$L^2$-gradient} of $\Jt$ at $m$ is defined by
 \begin{equation}
   \grad \Jt(m) := \Rmap_{L^2}(\mathrm{d}\Jt(m)) \in \Mspace,
 \end{equation}
@@ -701,13 +702,13 @@ Linearity of the inner product lets us factor \cref{eq:dJtilde-pre-riesz} as
   = \inner{\lambda + \alpha m}{\delta m}{\Lp{\Om}}
   \qquad \forall \delta m \in \Mspace.
 \end{equation}
-Comparing with the definition of $\grad \Jt$ identifies
+Comparing with the definition of $\grad \Jt$ gives us that
 \begin{equation}
     \grad \Jt(m) = \lambda + \alpha m.
   \label{eq:l2gradient-poisson}
 \end{equation}
 
-The role played by the choice of inner product on $\Mspace$ in \cref{defn:l2gradient} is the central concern of \cref{sec:mesh-dependence}: replacing $\Rmap_{L^2}$ by the sequence-space Riesz map $\Rmap_{\ell^2}$ produces a numerically different gradient and, consequently, a mesh-dependent optimisation algorithm.
+\ins{This completes the gradient derivation for the Poisson problem: a single forward solve for the state $u$ and a single adjoint solve for $\lambda$ combine to give $\grad \Jt(m) = \lambda + \alpha m$, the direction a gradient-based optimiser consumes at each step.}
 
 
 % =============================================================================
