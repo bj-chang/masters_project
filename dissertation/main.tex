@@ -52,7 +52,7 @@
 
 % Accessibility additions (undergrad review, 2026-07) are wrapped in ...
 % and rendered in red. To hide every mark at once, redefine this as {#1}.
-\newcommand{\ins}[1]{#1}  % review markup disabled (was \textcolor{red})
+\newcommand{\ins}[1]{\textcolor{red}{#1}}  % review markup ON: new/for-review content in red
 
 % --- Theorem environments ---
 \newtheorem{counter}{Counter}[section]
@@ -119,8 +119,7 @@ This dissertation studies mesh dependence in PDE-constrained optimisation. The n
 \newpage
 \section*{Acknowledgements}
 
-[insert acknowledgements]
-% I would like to thank my supervisor, Professor David A.\ Ham, for his guidance and support throughout this project, and Josh Hope-Collins for his help with the pyadjoint implementation.
+David, Josh, PETSc discord, % I would like to thank my supervisor, Professor David A.\ Ham, for his guidance and support throughout this project, and Josh Hope-Collins for his help with the pyadjoint implementation.
 
 \section*{Declaration of Originality}
 
@@ -150,7 +149,17 @@ We approach it in three stages. First, we build and verify the adjoint-based opt
 The dissertation is organised as follows. \Cref{sec:preliminaries} collects the functional-analytic background (Sobolev spaces, dual spaces, and the Riesz representation theorem) on which the whole argument rests. \Cref{sec:poisson-weak,sec:poisson-optimisation,sec:poisson-derivative,sec:poisson-numerics} take the linear Poisson problem through its weak form, its optimal-control formulation, the adjoint derivation of the gradient, and numerical verification, and \cref{sec:burgers-weak,sec:burgers-derivative,sec:burgers-numerics} repeat the same programme for the nonlinear Burgers problem. \Cref{sec:mesh-dependence} reproduces the mesh-dependence experiment, \cref{sec:precond} develops the two-level preconditioning contribution, and \cref{sec:lbfgs-comparison} traces, at the level of source code, exactly where the inner product enters each limited-memory optimiser. \Cref{sec:conclusions} concludes.
 
 
+\subsection{Contributions}
 
+\ins{The novel contributions of this dissertation are the following.}
+
+\begin{enumerate}
+  \item \ins{A systematic determination, across a mesh-refinement sweep spanning ratios from four to $128$, of which of the optimisation algorithms in the current PETSc TAO library honour the function-space inner product and which do not.}
+  \item \ins{Verification that TAO's limited-memory quasi-Newton method honours the inner product through its initial-Hessian seed, and is mesh-independent once its limited-memory history is large enough; this resolves an apparent failure to reproduce the reference results of \citet{shfp2017} that had earlier been attributed to an internal Euclidean inner product.}
+  \item \ins{A demonstration that the Newton line-search method is mesh-independent in its outer iterations while the mesh-dependence reappears in its inner Krylov solve, and that preconditioning that inner solve with the Riesz map removes it, reducing the inner iteration count from over a thousand to a constant across the mesh sweep.}
+  \item \ins{The principal contribution of this work: a production-quality implementation of that inner preconditioner, \texttt{RieszMapPC}. Realised as a PETSc Python preconditioner, it applies the Riesz map of each pyadjoint \texttt{Control} to the reduced-Hessian Krylov solve inside TAO's Newton method, reading the metric directly from the \texttt{Control} so that a user obtains a mesh-independent inner solve simply by attaching a Riesz map to the control, with none of the manual plumbing of the research prototype. Together with a Firedrake regression test that exercises it end to end, it has been prepared and submitted as pull requests to the upstream pyadjoint and Firedrake libraries, so that the two-level fix is available to every user of the stack rather than confined to this dissertation. To our knowledge it is the first implementation to expose and remove this inner-level mesh-dependence in an adjoint optimisation pipeline.}
+  \item \ins{A diagnosis of the two remaining mesh-dependent algorithms: the bounded quasi-Newton line-search method, which is curable by supplying the same seed by hand, and nonlinear conjugate gradient, which is shown to be structurally incurable within TAO for want of any interface at which the metric could be supplied.}
+\end{enumerate}
 % =============================================================================
 \section{Mathematical Preliminaries}
 \label{sec:preliminaries}
@@ -186,7 +195,7 @@ The final component is the \emph{objective functional} (or cost functional) $J(u
 \subsection{Domain and function spaces}
 \label{sec:prelim:spaces}
 
-Since a PDE is an equation about a function on a domain, we must first define both functions and domains properly. The classical setting (where we have that solutions are smooth enough to differentiate pointwise everywhere) is too restrictive for the elliptic problems of this dissertation (a class of steady, time-independent PDEs that includes Poisson's equation). Their natural solutions only have derivatives in a weak sense, where derivatives are defined by doing integration against test functions\footnote{A test function here is just a smooth function that we are free to choose, and the weak derivative is defined by asking the usual integration-by-parts formula to hold against every such test function, rather than by differentiating at each point. We show exactly how this works for Poisson's equation in \cref{sec:poisson-weak:derivation}; for now it is enough to know that it lets us make sense of derivatives for functions that are not smooth}. So, we need a function space which is large enough to contain them. The Sobolev spaces $H^1(\Om)$ and $H_0^1(\Om)$ give us exactly this.
+Since a PDE is an equation about a function on a domain, we must first define both functions and domains properly. The classical setting (where we have that solutions are smooth enough to differentiate pointwise everywhere) is too restrictive for the elliptic problems of this dissertation (a class of steady, time-independent PDEs that includes Poisson's equation). Their natural solutions only have derivatives in a weak sense, where derivatives are defined by doing integration against test functions\footnote{A test function here is just a smooth function that we are free to choose, and the weak derivative is defined by asking the usual integration-by-parts formula to hold against every such test function, rather than by differentiating at each point. We show exactly how this works for Poisson's equation in \cref{sec:poisson-weak:derivation}; for now it is enough to know that it lets us make sense of derivatives for functions that are not smooth}. So, we need a function space which is large enough to contain them. The Sobolev spaces $H^1(\Om)$ and $H_0^1(\Om)$ give us exactly this~\ins{\citep[\S5.2]{hc2026}}.
 
 Let $\Om \subset \R^d$, with $d \in \{1, 2, 3\}$, be a bounded open domain with Lipschitz boundary $\dom$.\footnote{Informally, a Lipschitz boundary is one that is not too rough: corners like a polygon's are allowed, but not cusps or fractal-like features. The unit square used in the experiments qualifies.} We assume that all functions are defined on $\Om$, unless stated otherwise. We denote by $\Lp{\Om}$ the space of square-integrable functions on $\Om$, equipped with the inner product and norm
 \begin{equation}
@@ -220,6 +229,12 @@ To also incorporate homogeneous Dirichlet boundary conditions into the function 
 \end{defn}
 
 Here, $C_c^\infty(\Om)$ denotes the smooth functions with compact support in $\Om$ (i.e., smooth functions which vanish in a neighbourhood of $\dom$). Taking the \emph{closure} of this set in the $H^1$ norm means we also include every function that can be approximated arbitrarily well, in the $H^1$ norm, by such smooth functions. Functions in $H_0^1(\Om)$ are zero on the boundary $\dom$, which makes this the natural solution space for problems with homogeneous Dirichlet boundary conditions.
+
+They also satisfy the following inequality, which we can use to show well-posedness.
+\begin{theorem}[Poincar\'e inequality]
+\label{thm:poincare}
+There is a constant $C_\Om > 0$, depending only on $\Om$, such that $\| u \|_{\Lp{\Om}} \le C_\Om\, \| \grad u \|_{\Lp{\Om}}$ for all $u \in H_0^1(\Om)$~\ins{\citep{bs2008}}.
+\end{theorem}
 
 The spaces $\Lp{\Om}$, $H^1(\Om)$ and $H_0^1(\Om)$ defined above are all examples of \emph{Hilbert spaces}, and the mesh-dependence story depends on the choice of inner product that is placed on such a space. We record the two underlying notions precisely.
 
@@ -256,7 +271,7 @@ Let $H$ be a Hilbert space with inner product $\inner{\cdot}{\cdot}{H}$.
 
 We write duality pairings between $H^{*}$ and $H$ in angle brackets, $\langle f, v \rangle$, and inner products in $H$ in parentheses, $(u, v)_H$, so that the bracket style can tell the reader which kind of object lives on each side. One specific case that we will use throughout the dissertation is the Sobolev dual $H^{-1}(\Om) := H_0^1(\Om)^{*}$.
 
-Although $H$ and $H^{*}$ are different spaces of different objects, the Riesz representation theorem below gives a canonical bijection between them.
+Although $H$ and $H^{*}$ are different spaces of different objects, the Riesz representation theorem below gives a canonical bijection between them~\ins{\citep[Thm~1.1]{shfp2017}}.
 
 \begin{theorem}[Riesz representation theorem]
 \label{thm:riesz} Let $H$ be a Hilbert space with inner product $\inner{\cdot}{\cdot}{H}$. For any continuous linear functional $f \in H^{*}$, there exists a unique $u_f \in H$ such that
@@ -278,7 +293,7 @@ The Riesz map depends on the choice of inner product on $H$: the same linear fun
 \subsection{Differential calculus in function spaces}
 \label{sec:prelim:frechet}
 
-To minimise a functional, we have to differentiate it, and the adjoint method in particular depends on the chain rule applied to a composite operator. In finite dimensions, partial derivatives stacked into a vector are enough. However, the optimisation variable here lives in an infinite-dimensional Hilbert space, so we even have to be careful about what ``direction'' actually means. So, we define the Fr{\'e}chet derivative as the right replacement for the finite-dimensional gradient: a bounded linear operator\footnote{A linear map between the two spaces whose output norm is at most a fixed multiple of the input norm.} that captures the first-order change of a map between Hilbert spaces.
+To minimise a functional, we have to differentiate it, and the adjoint method in particular depends on the chain rule applied to a composite operator. In finite dimensions, partial derivatives stacked into a vector are enough. However, the optimisation variable here lives in an infinite-dimensional Hilbert space, so we even have to be careful about what ``direction'' actually means. So, we define the Fr{\'e}chet derivative as the right replacement for the finite-dimensional gradient: a bounded linear operator\footnote{A linear map between the two spaces whose output norm is at most a fixed multiple of the input norm.} that captures the first-order change of a map between Hilbert spaces~\ins{\citep[\S1.2.2--1.2.3]{shfp2017}}.
 
 Let $U$ and $V$ be Hilbert spaces, and let $F : U \to V$ be a (possibly nonlinear) operator.
 
@@ -325,7 +340,7 @@ and \emph{coercive} if there exists a constant $\alpha > 0$ such that
   a(u, u) \ge \alpha \|u\|_V^2
   \qquad \forall u \in V.
 \end{equation}
-These two properties are the hypotheses of the following Lax-Milgram theorem.
+These two properties are the hypotheses of the following Lax-Milgram theorem~\ins{\citep[Thm~4.36]{hc2026}}.
 
 \begin{theorem}[Lax-Milgram]
 Let $V$ be a Hilbert space and let $a(\cdot, \cdot) : V \times V \to \R$ be a continuous, coercive bilinear form. Then for every continuous linear functional $\ell \in V^{*}$ there exists a unique $u \in V$ such that
@@ -369,13 +384,13 @@ which vanishes on $\dom$ in the trace sense. Multiplying \cref{eq:strong-forward
   \label{eq:weak-derivation-step1}
   \int_{\Om} (-\Delta u)\, v \dx = \int_{\Om} m\, v \dx.
 \end{equation}
-The left-hand side contains second derivatives of $u$. We remove one of them by applying Green's first identity, which gives
+The left-hand side contains second derivatives of $u$. To remove one of them, we recall Green's first identity~\ins{\citep[Lemma~5.23]{hc2026}}:
 \begin{equation}
   \int_{\Om} (-\Delta u)\, v \dx
   = \int_{\Om} \grad u \cdot \grad v \dx
   - \int_{\dom} \frac{\partial u}{\partial n}\, v \ds,
 \end{equation}
-where $n$ denotes the outward unit normal on $\dom$ and $\partial u / \partial n := \grad u \cdot n$ is the normal derivative of $u$. Because $v \in H_0^1(\Om)$ has zero trace on $\dom$, the boundary integral vanishes, and we obtain
+where $n$ denotes the outward unit normal on $\dom$ and $\partial u / \partial n := \grad u \cdot n$ is the normal derivative of $u$. Because $v \in H_0^1(\Om)$ vanishes on $\dom$ (because of the boundary conditions), the boundary integral vanishes, and we obtain
 \begin{equation}
   \int_{\Om} (-\Delta u)\, v \dx
   = \int_{\Om} \grad u \cdot \grad v \dx.
@@ -397,7 +412,7 @@ and this identity must hold for all test functions $v \in H_0^1(\Om)$. We collec
 \end{equation}
 \end{defn}
 
-It is convenient to introduce the bilinear form
+It is also convenient to introduce the bilinear form
 \begin{equation}
   \label{eq:bilinear-b}
   b(u, v) := \int_{\Om} \grad u \cdot \grad v \dx
@@ -407,7 +422,7 @@ and the linear functional
   \label{eq:linear-ell}
   \ell(v) := \int_{\Om} m\, v \dx,
 \end{equation}
-so that \cref{eq:weak-forward} reads
+so that \cref{eq:weak-forward} now reads
 \begin{equation}
   \label{eq:weak-forward-compact}
   \text{find } u \in H_0^1(\Om) \text{ such that }
@@ -422,7 +437,7 @@ The bilinear form $b$ is continuous and, by the Poincar{\'e} inequality, coerciv
 \label{sec:poisson-optimisation}
 % =============================================================================
 
-Now, we have set up the forward problem and showed it is well posed, so each source term $m$ determines the state $u$. We now reverse the question. Rather than taking the source as given, we ask which source term $m$ makes the resulting state $u$ best match a given desired state $d$, while penalising large controls. This is a PDE-constrained optimisation problem of the form introduced in \cref{sec:prelim:problem}.
+Now, we have set up the forward problem and showed it is well posed, so each source term $m$ determines the state $u$. We now reverse the question. Rather than taking the source as given, we ask which source term $m$ makes the resulting state $u$ best match a given desired state $d$, while penalising large controls. In practice it is often this reversed direction, achieving a desired outcome rather than predicting one, that we care about. As an example, if we let $u$ be the steady-state temperature of a body whose boundary is held fixed and $m$ be a distributed heat source, we are asking which heating $m$ brings the temperature closest to a desired profile $d$ without expending excessive power. Problems of this shape, in which an input to a PDE is tuned to steer its solution towards a target, are very common in inverse problems and optimal design. The Poisson optimal control problem is a PDE-constrained optimisation problem of the form introduced in \cref{sec:prelim:problem}~\ins{\citep{shfp2017}}.
 
 Throughout the Poisson sections, we set
 \begin{equation}
@@ -437,7 +452,7 @@ Throughout the Poisson sections, we set
 
 Let $d \in \Lp{\Om}$ be a given desired state and let $\alpha > 0$.
 
-\begin{defn}[Objective functional]
+\begin{defn}[Poisson objective functional]
 \label{defn:objective} The objective functional $J : V \times \Mspace \to \R$ is defined by
 \begin{equation}
   \label{eq:objective-J}
@@ -447,14 +462,14 @@ Let $d \in \Lp{\Om}$ be a given desired state and let $\alpha > 0$.
 \end{equation}
 \end{defn}
 
-The first term measures the misfit between the state $u$ and the desired state $d$. The second term penalises large controls; the parameter $\alpha > 0$ balances accuracy of fit against regularity of the control. The presence of the regularisation term ensures that the optimisation problem is well posed.
+The first term measures the misfit between the state $u$ and the desired state $d$. The second term penalises large controls; the parameter $\alpha > 0$ balances accuracy of fit against regularity of the control. Note that without the regularisation term the problem would be ill posed: the control-to-state map is smoothing, so many very different controls would produce nearly the same state and the misfit term alone fixes no unique, stable minimiser. The quadratic penalty makes the objective strictly convex and coercive in $m$, which ensures a unique minimiser that depends continuously on the data.
 
 \subsection{The constrained optimisation problem}
 \label{sec:opt:constrained}
 
-Combining \cref{defn:objective} with the weak state equation \cref{eq:weak-forward-compact}, the PDE-constrained optimisation problem reads as follows.
+Combining \cref{defn:objective} with the weak state equation \cref{eq:weak-forward-compact}, we get that the PDE-constrained optimisation problem reads as follows.
 
-\begin{defn}[PDE-constrained optimisation problem]
+\begin{defn}[Poisson PDE-constrained optimisation problem]
 \label{defn:full-problem} Find $(u, m) \in V \times \Mspace$ minimising
 \begin{equation}
   \min_{(u, m) \in V \times \Mspace} J(u, m)
@@ -469,25 +484,31 @@ where the bilinear form $b$ and the linear functional $\ell$ are those of \cref{
 \subsection{Reduced formulation}
 \label{sec:opt:reduced}
 
-For each $m \in \Mspace$ there exists a unique state $u \in V$ satisfying the state equation, so we may view the state as a function of the control.
+The problem of \cref{defn:full-problem} is a \emph{constrained} minimisation: $u$ and $m$ are not independent, but are instead tied together by the state equation, and such problems in $V \times \Mspace$ are awkward to attack with the gradient-based methods that we will use in the rest of this dissertation. However, since the state equation determines $u$ uniquely from $m$, we have that the state is not a free unknown, and we can remove it, reducing the problem to an \emph{unconstrained} minimisation over the control alone~\ins{\citep{shfp2017}}.
 
-\begin{defn}[Solution operator]
+For each $m \in \Mspace$ there exists a unique state $u \in V$ satisfying the state equation, so we may view the state as a function of the control. To make this precise, we name the map that sends each control to its state as the solution operator: 
+
+\begin{defn}[Poisson solution operator]
 \label{defn:solution-operator} The solution operator $S : \Mspace \to V$ assigns to each $m \in \Mspace$ the unique solution $S(m) := u(m) \in V$ of the weak state equation associated with $m$.
 \end{defn}
 
 Using the solution operator we eliminate the state from the optimisation problem.
 
-\begin{defn}[Reduced functional]
+\begin{defn}[Poisson reduced functional]
 \label{defn:reduced-functional} The reduced functional $\Jt : \Mspace \to \R$ is defined by
 \begin{equation}
   \Jt(m) := J(S(m), m) = J(u(m), m).
 \end{equation}
 \end{defn}
 
-The constrained problem of \cref{defn:full-problem} is then equivalent to the unconstrained minimisation problem
+The second equality is only a change of notation: $S(m)$ and $u(m)$ are two names for the same object, the unique state produced by the control $m$. The key step is that $\Jt$ is a function of $m$ alone, which is legitimate because the state equation determines that state uniquely, so that once $m$ is fixed no independent choice of $u$ remains.
+
+We then have that the constrained problem of \cref{defn:full-problem} is equivalent to the unconstrained minimisation problem
 \begin{equation}
   \min_{m \in \Mspace} \Jt(m).
 \end{equation}
+
+This reduced functional is the central object of the rest of this work: it is what every optimiser we study minimises, its gradient (computed by the adjoint method of \cref{sec:poisson-derivative}) is what the Riesz map acts on, and its Hessian is where the mesh-dependence of \cref{sec:mesh-dependence} appears.
 
 
 % =============================================================================
@@ -495,7 +516,7 @@ The constrained problem of \cref{defn:full-problem} is then equivalent to the un
 \label{sec:poisson-derivative}
 % =============================================================================
 
-We have now reduced the problem to the unconstrained minimisation of $\Jt$ over the control space. A gradient-based method for this needs the derivative of $\Jt$. Getting it by differentiating through the state equation would require a separate linearised solve for each control direction $\delta m$, whereas the adjoint method delivers the derivative in every direction from a single additional solve. It does this by introducing an auxiliary variable, the \emph{adjoint}, whose governing equation is chosen precisely so that the unknown state variation cancels from the expression for the derivative; the derivative in every direction can then be recovered from one adjoint solution. We now carry out this derivation for the Poisson problem, using the chain rule (\cref{thm:chain}) and the calculus of partial Fr{\'e}chet derivatives (\cref{defn:partial-frechet}) introduced in \cref{sec:prelim:frechet}.
+We have now reduced the problem to the unconstrained minimisation of $\Jt$ over the control space. We want to do this minimisation with a gradient-based method, the natural choice for optimising over a function space, but these methods need the derivative of $\Jt$. Getting it by differentiating through the state equation would require a separate linearised solve for each control direction $\delta m$, whereas if we use the adjoint method, we can get the derivative in every direction from a single additional solve. It does this by introducing an auxiliary variable, the \emph{adjoint}, whose governing equation is chosen precisely so that the unknown state variation cancels from the expression for the derivative; the derivative in every direction can then be obtained from one adjoint solution. We now carry out this derivation for the Poisson problem, using the chain rule (\cref{thm:chain}) and the calculus of partial Fr{\'e}chet derivatives (\cref{defn:partial-frechet}) introduced in \cref{sec:prelim:frechet}.
 
 Applying the chain rule to $\Jt(m) = J(u(m), m)$ in the direction $\delta m \in \Mspace$ gives
 \begin{equation}
@@ -546,15 +567,15 @@ First, the derivative with respect to $u$. For $\varepsilon \in \R$, set $u_\var
 The corresponding difference quotient is
 \begin{equation}
   \frac{F(u + \varepsilon \delta u, m;\, v) - F(u, m;\, v)}{\varepsilon}
-  = b(\delta u, v).
+  = b(\delta u, v),
 \end{equation}
-Taking $\varepsilon \to 0$ gives
+and taking $\varepsilon \to 0$ gives
 \begin{equation}
   \label{eq:partial-Fu}
   \partial_u F(u, m;\, \delta u, v) = b(\delta u, v).
 \end{equation}
 
-Next, the derivative with respect to $m$. By the analogous argument with $m_\varepsilon := m + \varepsilon \delta m$,
+Next, the derivative with respect to $m$. By the analogous argument, perturbing $m$ in the direction $\delta m$,
 \begin{equation}
   \label{eq:partial-Fm}
   \partial_m F(u, m;\, \delta m, v)
@@ -1938,6 +1959,17 @@ m_opt = solver.solve()
 The single argument \texttt{riesz\_map="L2"} sets the outer metric, and the two \texttt{tao\_nls\_pc} options attach the same Riesz map as the inner-CG preconditioner. Changing both to \texttt{"H1"} switches the whole solve to the $H^{1}$ metric with no other change, which is how the matched and mismatched runs of \cref{sec:meshdep:matching} were produced.
 
 The experiments of \cref{sec:mesh-dependence,sec:precond} are driven by a small Python package written for this dissertation, providing the graded and random meshes, the Poisson and Burgers control problems, the four optimiser wrappers used for the panels (SciPy L-BFGS-B, the Hilbert-space L-BFGS, and the two TAO routes), and the research-prototype preconditioners. Each table and figure is produced by a short driver script over these components, and the full package and scripts are available in the accompanying code repository. The experiments were run with Firedrake and its pyadjoint algorithmic-differentiation extension, on top of PETSc, which provides the TAO optimisation toolkit and the Krylov solvers used throughout; the forward and Riesz-map solves use PETSc's direct LU factorisation.
+
+\subsection{A solver with no hook for the metric: nonlinear conjugate gradient}
+\label{sec:precond:cg}
+
+\ins{The metric enters a TAO solve by one of two routes: as the initial-Hessian seed of a limited-memory quasi-Newton method (\cref{sec:meshdep:tao-revisited}), or as a preconditioner on the inner Krylov solve of a Newton method (\cref{sec:meshdep:inner-cg}). The nonlinear conjugate gradient solver \texttt{cg}, the single strongly mesh-dependent row of \cref{tab:meshdep:tao-zoo}, admits neither, and the reason is structural rather than a matter of tuning.}
+
+\ins{Neither route has a point of attachment in \texttt{cg}. It builds no limited-memory operator, so \texttt{getLMVMMat} and \texttt{getLMVMH0KSP} both raise an error and there is no seed to carry the metric, in contrast to \texttt{lmvm} and \texttt{bqnls}. It performs no Hessian solve, so \texttt{getKSP} returns a null Krylov object and there is no inner solve for a Riesz-map preconditioner to act on, in contrast to \texttt{nls}. Its search direction is formed as $-g_{k} + \beta_{k} d_{k-1}$ from the assembled dual gradient under $\ell^{2}$ inner products, the dual gradient being taken directly as a primal direction, and PETSc TAO exposes no nonlinear-preconditioning interface through which the Riesz map could be inserted at that point.}
+
+\ins{The solver's behaviour confirms the diagnosis. Running \texttt{cg} for a fixed iteration budget on the Poisson problem with \texttt{Control(m, riesz\_map="L2")} and again with \texttt{riesz\_map="l2"} produced bit-for-bit identical iterates, the two runs agreeing in the objective to every digit, whereas the same switch changed the iterates of \texttt{lmvm}, whose metric enters through the seed. The Riesz map therefore never reaches \texttt{cg}'s search directions, in agreement with the missing hooks. The line search is not responsible either: with its default Mor\'e--Thuente line search \texttt{cg} converged in $68$ iterations on a uniform mesh, but with the line search disabled (unit steps) it failed to converge at all (\texttt{DIVERGED\_MAXITS}). Unlike a Newton method \texttt{cg} has no natural unit step, so the line search is essential and functioning correctly.}
+
+\ins{The mesh-dependence of \texttt{cg} is therefore neither a bug nor a preconditioner left unset; it is intrinsic to the algorithm as exposed by TAO, which operates in the ambient $\ell^{2}$ inner product with no interface at which the function-space metric can be supplied. Making \texttt{cg} mesh-robust would require the algorithm-level treatment given to LMVM, inserting the inner product into the recursion itself, rather than either of the two mechanisms used in this dissertation.}
 
 
 % =============================================================================
