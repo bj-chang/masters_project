@@ -52,7 +52,7 @@
 
 % Accessibility additions (undergrad review, 2026-07) are wrapped in ...
 % and rendered in red. To hide every mark at once, redefine this as {#1}.
-\newcommand{\ins}[1]{\textcolor{red}{#1}}  % review markup ON: new/for-review content in red
+\newcommand{\ins}[1]{#1}  % review markup OFF: \ins content renders as normal black text
 
 % --- Theorem environments ---
 \newtheorem{counter}{Counter}[section]
@@ -723,6 +723,8 @@ We carry out the numerical work in two stages. First, we implement the forward P
 \subsection{Forward Poisson by hand}
 \label{sec:poisson-numerics:byhand}
 
+\ins{We start from scratch, without a finite element library, so that nothing about the method is hidden. Implementing the forward solve by hand puts every step, the mesh, the basis functions, the assembly and the boundary conditions, in plain view, where each can be checked directly against the weak form of \cref{sec:poisson-weak}.}
+
 We implement the forward problem in plain Python using a continuous piecewise linear finite element method. The domain $\Om = (0, 1)^2$ is triangulated using a structured mesh obtained by splitting each square cell into two triangles (\cref{fig:poisson-mesh}), and the discrete space is the standard $P_1$ Lagrange space.
 
 \begin{figure}[H]
@@ -732,9 +734,27 @@ We implement the forward problem in plain Python using a continuous piecewise li
   \label{fig:poisson-mesh}
 \end{figure}
 
-For each element, the implementation assembles the local stiffness matrix and the local load vector by mapping from the physical triangle to a reference triangle and applying numerical quadrature. The local contributions are then accumulated into a global sparse linear system. Since the problem is subject to homogeneous Dirichlet boundary conditions, the algebraic system is modified so that boundary degrees of freedom are fixed to zero. These steps are summarised in \cref{alg:poisson-assembly}; the full implementation is available in the accompanying code repository.
+% For each element, the implementation assembles the local stiffness matrix and the local load vector by mapping from the physical triangle to a reference triangle and applying numerical quadrature. The local contributions are then accumulated into a global sparse linear system. Since the problem is subject to homogeneous Dirichlet boundary conditions, the algebraic system is modified so that boundary degrees of freedom are fixed to zero. These steps are summarised in \cref{alg:poisson-assembly}; the full implementation is available in the accompanying code repository.
 
-\begin{algorithm}[htbp]
+\ins{First we define two finite element notions that the assembly below relies on: the degrees of freedom it solves for, and the numerical quadrature it uses to evaluate the element integrals.}
+
+\begin{defn}[Degree of freedom]
+\label{defn:dof}
+\ins{A \emph{degree of freedom} is one of the unknowns in the finite element system: the coefficient multiplying a single basis function. For the $P_1$ Lagrange space used here, there is one degree of freedom per mesh vertex.}
+\end{defn}
+
+\begin{defn}[Numerical quadrature]
+\label{defn:quadrature}
+\ins{A \emph{quadrature rule} approximates the integral of a function $f$ over an element $K$ by a weighted sum of its values at finitely many points,}
+\begin{equation}
+  \int_K f \dx \approx \sum_{q} w_q\, f(x_q),
+\end{equation}
+\ins{where the $x_q$ are the \emph{quadrature points} and the $w_q$ the corresponding \emph{weights}. The rule has \emph{degree} $p$ if this approximation is exact whenever $f$ is a polynomial of degree at most $p$.}
+\end{defn}
+
+We assemble the global linear system one element at a time. For each triangle, we first map it onto a reference triangle and apply numerical quadrature (\cref{defn:quadrature}), which gives us a local stiffness matrix and a local load vector. We then add these local contributions into a single global sparse system. Finally, since the problem has homogeneous Dirichlet boundary conditions, we modify the assembled system so that the boundary degrees of freedom (\cref{defn:dof}) are fixed to zero. These steps are summarised in \cref{alg:poisson-assembly}, and the full implementation is available in the accompanying code repository.
+
+\begin{algorithm}[H]
 \caption{Assembly and solution of the $P_1$ forward Poisson system, as carried out by hand.}
 \label{alg:poisson-assembly}
 \begin{algorithmic}[1]
@@ -755,12 +775,14 @@ For each element, the implementation assembles the local stiffness matrix and th
 \end{algorithmic}
 \end{algorithm}
 
-The hand-written implementation prioritises clarity over efficiency. Writing the assembly explicitly makes the connection between the weak form derived in \cref{sec:poisson-weak} and the finite element matrices that appear in the computation transparent.
+The hand-written implementation focuses more on clarity rather than efficiency - writing the assembly explicitly makes the connection between the weak form derived in \cref{sec:poisson-weak} and the finite element matrices that appear in the computation transparent.
 
 \subsection{Forward Poisson solve in Firedrake}
 \label{sec:poisson-numerics:firedrake}
 
-We then implement the same forward problem in Firedrake~\citep{firedrake2016} using continuous Galerkin elements of degree one. The variational forms are written directly from the weak formulation \cref{eq:weak-forward-compact}, and the homogeneous Dirichlet boundary condition is imposed strongly on $\dom$. The complete forward solve is shown in \cref{lst:poisson-firedrake}.
+\ins{The hand-written solve is transparent, but it only does the forward problem. Everything that follows, the adjoint solve, the gradient, and the mesh-dependence experiments, relies on the algorithmic differentiation that Firedrake and its pyadjoint extension provide, so we now want to implement the same forward problem there. This also gives an independent check, as we now have two different codes should agree on the same discretisation.}
+
+So, we now implement the same forward problem in Firedrake~\citep{firedrake2016} using continuous Galerkin elements of degree one. The variational forms are written directly from the weak formulation \cref{eq:weak-forward-compact}, and the homogeneous Dirichlet boundary condition is imposed strongly on $\dom$. The complete forward solve is shown in \cref{lst:poisson-firedrake}.
 
 \begin{figure}[H]
 \begin{lstlisting}[language=Python]
@@ -870,10 +892,12 @@ This confirms the expected $\mathcal{O}(h^{2})$ rate, since the data run paralle
   \label{fig:poisson-convergence}
 \end{figure}
 
-Both implementations recover the theoretical second-order rate, confirming that the forward discretisation is correct. The two do not report the same absolute error: the hand-written code is consistently a little larger, and its rescaled error in \cref{fig:poisson-convergence} plateaus near $1.34$ against Firedrake's $1.24$. This gap is a quadrature effect, not a difference in the discretisation, since both solve the same $P_1$ problem on the same mesh. The hand-written assembler evaluates the load vector and the $L^{2}$ error with a fixed degree-two quadrature rule, whereas Firedrake selects a higher quadrature degree for the smooth manufactured source $2\pi^{2}\sin(\pi x)\sin(\pi y)$ and for the error integrand; the coarser rule integrates these slightly less accurately and so reports a marginally larger error. A degree-two rule is still exact enough to preserve the $\mathcal{O}(h^{2})$ rate, which is why the two curves are parallel rather than divergent.
+Both implementations recover the theoretical second-order rate, confirming that the forward discretisation is correct. The two do not report the same absolute error: the hand-written code is consistently a little larger, and its rescaled error in \cref{fig:poisson-convergence} plateaus near $1.34$ against Firedrake's $1.24$. This gap is a quadrature effect, not a difference in the discretisation, since both solve the same $P_1$ problem on the same mesh. The hand-written assembler evaluates the load vector and the $L^{2}$ error with a fixed degree-two quadrature rule, whereas Firedrake selects a higher quadrature degree for the smooth manufactured source $2\pi^{2}\sin(\pi x)\sin(\pi y)$ and for the error integrand - the coarser rule integrates these slightly less accurately and so reports a marginally larger error. A degree-two rule is still exact enough to preserve the $\mathcal{O}(h^{2})$ rate, which is why the two curves are parallel rather than divergent.
 
 \subsection{Adjoint solve and gradient computation}
 \label{sec:poisson-numerics:adjoint}
+
+\ins{We now implement the gradient in Firedrake. This is the step that matters most for the rest of the work, as every optimiser we will later study uses this gradient at each iteration, so it must be computed correctly.}
 
 The derivation of \cref{sec:poisson-derivative} states that the gradient of the reduced functional is computed by first solving the adjoint equation and then forming the $L^2$-gradient $\grad \Jt(m) = \lambda + \alpha m$. The Firedrake implementation does this in three stages:
 \begin{enumerate}
@@ -887,7 +911,7 @@ The numerical implementation mirrors the theoretical derivation. In particular, 
 \subsection{Taylor test for gradient verification}
 \label{sec:poisson-numerics:taylor}
 
-After implementing the adjoint and gradient, we carry out a Taylor test to verify that the computed gradient is correct. The Taylor test is a standard practical check for adjoint implementations~\citep{mitusch2019}.
+After implementing the adjoint and gradient \ins{in Firedrake}, we carry out a Taylor test to verify that the computed gradient is correct. The Taylor test is a standard practical check for adjoint implementations~\citep{mitusch2019}.
 
 Let $\delta m$ be a perturbation direction and let $h > 0$ be a small parameter. The reduced functional satisfies the Taylor expansion
 \begin{equation}
@@ -928,7 +952,7 @@ Using a smooth perturbation direction, we obtained the remainder sequence report
 \label{sec:burgers-weak}
 % =============================================================================
 
-Having done the full programme (forward solve, adjoint equation, reduced gradient, and numerical verification) through for the linear Poisson problem, we now repeat it for a harder, nonlinear model problem: the scalar viscous Burgers equation. Following the notation established earlier, we write the state variable as $u$ and the control as $m$. This is a scalar simplification of the time-dependent viscous Burgers model considered by \citet{shfp2017}, whose treatment is vector-valued. The principal new features compared with the Poisson problem are nonlinearity in $u$ (through the convection term), time dependence (which we treat with backward Euler in \cref{sec:burgers-numerics}), and a backward-in-time adjoint solve.
+Having done the full programme (forward solve, adjoint equation, reduced gradient, and numerical verification) through for the linear Poisson problem, we now repeat it for a harder, nonlinear model problem: the scalar viscous Burgers equation. Following the notation established earlier, we write the state variable as $u$ and the control as $m$. This is a scalar simplification of the time-dependent viscous Burgers model considered by \citet{shfp2017}, whose treatment is vector-valued. The main new features compared with the Poisson problem are nonlinearity in $u$ (through the convection term), time dependence (which we treat with backward Euler in \cref{sec:burgers-numerics}), and a backward-in-time adjoint solve.
 
 \subsection{Strong formulation}
 \label{sec:burgers-weak:strong}
@@ -1014,6 +1038,8 @@ The derivation follows the same three steps as the Poisson case: we differentiat
 \subsection{Tangent linear equation}
 \label{sec:burgers-deriv:tlm}
 
+\ins{As in the Poisson case (\cref{sec:deriv:tangent}), the first step is to relate the state variation $\delta u$ to the control perturbation $\delta m$ by differentiating the state equation. The one new feature is the convection term $u\,\partial_x u$: being nonlinear in $u$, its linearisation is where the real work of this step lies.}
+
 Let $\delta m \in \Mspace$ be a control perturbation and let $\delta u := \mathrm{d} u(m;\, \delta m)$ denote the corresponding variation in the state. Differentiating $F(u(m), m;\, v) = 0$ with respect to $m$ gives us
 \begin{equation}
   \partial_u F(u, m;\, \delta u, v) + \partial_m F(u, m;\, \delta m, v) = 0
@@ -1068,6 +1094,8 @@ together with the initial condition $\delta u(0, x) = 0$.
 
 \subsection{Adjoint equation}
 \label{sec:burgers-deriv:adjoint}
+
+\ins{Exactly as in the Poisson case (\cref{sec:deriv:adjoint}), we introduce the adjoint to remove the state variation $\delta u$ from the derivative. The new feature is temporal: integrating the time-derivative term by parts moves the derivative onto $\lambda$ and forces a terminal condition, so the Burgers adjoint is solved backward in time.}
 
 The adjoint variable $\lambda$ is defined by
 \begin{equation}
@@ -1356,9 +1384,9 @@ Together, the verifications of \cref{sec:poisson-numerics,sec:burgers-numerics} 
 \label{sec:mesh-dependence}
 % =============================================================================
 
-So far, we have derived, discretised and verified the adjoint-based gradient for both the Poisson and the scalar viscous Burgers optimal control problems. In each case the $L^2$-gradient $\grad \Jt(m) = \lambda + \alpha m$ was identified via the Riesz representation theorem (\cref{thm:riesz}). That identification is not unique: it depends on the choice of Hilbert space structure placed on the control space $\Mspace$. In this section we examine the practical consequences of that choice when the reduced functional is minimised numerically. Following \citet[Chap.~2]{shfp2017}, we show that two different but mathematically valid choices of inner product give optimisation algorithms whose iteration counts behave very differently as the mesh is refined.
+So far, we have derived, discretised and verified the adjoint-based gradient for both the Poisson and the scalar viscous Burgers optimal control problems. In each case, the $L^2$-gradient $\grad \Jt(m) = \lambda + \alpha m$ was identified using the Riesz representation theorem (\cref{thm:riesz}). That identification is not unique: it depends on the choice of Hilbert space structure placed on the control space $\Mspace$. In this section we examine the practical consequences of that choice when the reduced functional is minimised numerically. Following \citet[Chap.~2]{shfp2017}, we show that two different but mathematically valid choices of inner product give optimisation algorithms whose iteration counts behave very differently as the mesh is refined.
 
-\subsection{Background and motivation}
+\subsection{The two Riesz maps}
 \label{sec:meshdep:background}
 
 \Cref{sec:prelim:riesz,sec:deriv:l2grad} established that the Fr{\'e}chet derivative $\mathrm{d}\Jt(m)$ is an element of the dual space $\Mspace^{*}$, and that the Riesz map $\Rmap_H : \Mspace^{*} \to \Mspace$ identifies each derivative with a primal element of $\Mspace$. When $\Mspace = \Lp{\Om}$ is treated as an $L^{2}$ Hilbert space, the Riesz map $\Rmap_{L^2}$ corresponds in the discrete setting to multiplication by the inverse of the Galerkin mass matrix \citep[Eq.~(1.125)]{shfp2017}. When the same coefficient vector is regarded instead as an element of $\R^{d}$ under the standard Euclidean ($\ell^{2}$) inner product, no mass matrix appears and the Riesz map is the identity.
@@ -1472,6 +1500,8 @@ The deterministic graded meshes above correspond to the boundary-refinement sche
 \subsection{Implementation}
 \label{sec:meshdep:implementation}
 
+\ins{Testing the hypothesis in code requires pinning down two things: which inner product each algorithm uses internally, and a stopping criterion applied identically to every algorithm regardless of that choice. We describe how both are handled, together with the practical obstacles that arise in routing the problem through TAO/LMVM.}
+
 The experiments are built on Firedrake~\citep{firedrake2016} and its algorithmic-differentiation extension pyadjoint~\citep{mitusch2019}. The choice of inner product on the control is made through pyadjoint's \texttt{Control}, whose \texttt{riesz\_map} argument, one of \texttt{"l2"}, \texttt{"L2"} or \texttt{"H1"}, selects which discrete Riesz map pyadjoint applies when it converts the dual derivative $\mathrm{d}\Jt(m)$ into a primal gradient:
 \begin{lstlisting}[language=Python]
 Jhat = ReducedFunctional(
@@ -1494,6 +1524,8 @@ TAO/LMVM with these corrections reproduces Schwedes' pattern, but its rank-two u
 
 \subsection{BFGS in a Hilbert space}
 \label{sec:meshdep:hilbert-lbfgs}
+
+\ins{This is the reference implementation: a limited-memory BFGS in which the metric is completely explicit, so that one can read off at every step where the inner product enters.}
 
 We take $H$ to be either $\Lp{\Om}$ or $H^{1}(\Om)$, with the inner products
 \begin{equation}
@@ -1961,6 +1993,8 @@ The single argument \texttt{riesz\_map="L2"} sets the outer metric, and the two 
 
 The experiments of \cref{sec:mesh-dependence,sec:precond} are driven by a small Python package written for this dissertation, providing the graded and random meshes, the Poisson and Burgers control problems, the four optimiser wrappers used for the panels (SciPy L-BFGS-B, the Hilbert-space L-BFGS, and the two TAO routes), and the research-prototype preconditioners. Each table and figure is produced by a short driver script over these components, and the full package and scripts are available in the accompanying code repository. The experiments were run with Firedrake and its pyadjoint algorithmic-differentiation extension, on top of PETSc, which provides the TAO optimisation toolkit and the Krylov solvers used throughout; the forward and Riesz-map solves use PETSc's direct LU factorisation.
 
+% ==== 12.7 (nonlinear conjugate gradient) removed for now; re-add after re-verifying the cg experiments ====
+\iffalse
 \subsection{A solver with no hook for the metric: nonlinear conjugate gradient}
 \label{sec:precond:cg}
 
@@ -1971,6 +2005,8 @@ The experiments of \cref{sec:mesh-dependence,sec:precond} are driven by a small 
 \ins{The solver's behaviour confirms the diagnosis. Running \texttt{cg} for a fixed iteration budget on the Poisson problem with \texttt{Control(m, riesz\_map="L2")} and again with \texttt{riesz\_map="l2"} produced bit-for-bit identical iterates, the two runs agreeing in the objective to every digit, whereas the same switch changed the iterates of \texttt{lmvm}, whose metric enters through the seed. The Riesz map therefore never reaches \texttt{cg}'s search directions, in agreement with the missing hooks. The line search is not responsible either: with its default Mor\'e--Thuente line search \texttt{cg} converged in $68$ iterations on a uniform mesh, but with the line search disabled (unit steps) it failed to converge at all (\texttt{DIVERGED\_MAXITS}). Unlike a Newton method \texttt{cg} has no natural unit step, so the line search is essential and functioning correctly.}
 
 \ins{The mesh-dependence of \texttt{cg} is therefore neither a bug nor a preconditioner left unset; it is intrinsic to the algorithm as exposed by TAO, which operates in the ambient $\ell^{2}$ inner product with no interface at which the function-space metric can be supplied. Making \texttt{cg} mesh-robust would require the algorithm-level treatment given to LMVM, inserting the inner product into the recursion itself, rather than either of the two mechanisms used in this dissertation.}
+\fi
+% ==== end removed 12.7 ====
 
 
 % =============================================================================
