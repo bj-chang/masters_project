@@ -1,56 +1,38 @@
-"""Generate the six graded meshes for Table 2.2.
+"""writes graded_R{4..128}.msh. 8x8 base, rivara bisection inside [0.4,0.6]^2, realised ratio an exact power of two"""
+import sys
 
-Recipe mirrors meshdep/meshes.py:graded_unit_square: a unit square with
-a coarse outer region (h <= 0.2) and a fine inner 0.4 x 0.4 sub-square
-in the lower-left corner with h <= 0.2 / ratio. Each mesh is exported
-to a Gmsh v2 .msh file that Firedrake can load directly.
-"""
+sys.path.insert(0, "/home/bjcwsl/masters_project/code/mesh_generation")
 
-from netgen.geom2d import SplineGeometry
+import numpy as np
+
+from random_refine import (
+    bisect_refine, h_ratio, initial_uniform_arrays, write_gmsh22,
+)
 
 RATIOS = [4, 8, 16, 32, 64, 128]
-H_MAX = 0.2
+N_INITIAL = 8
+REGION = (0.4, 0.6, 0.4, 0.6)
+OUT_DIR = "/home/bjcwsl/masters_project/code/mesh_generation"
 
 
-def build_geometry():
-    geo = SplineGeometry()
+def deterministic_interior_mesh(n_initial, n_rounds, region):
 
-    # Shared points so the inner sub-square's left/bottom edges coincide
-    # exactly with the outer boundary, instead of being duplicated splines.
-    p_00   = geo.AppendPoint(0.0, 0.0)
-    p_a0   = geo.AppendPoint(0.4, 0.0)
-    p_10   = geo.AppendPoint(1.0, 0.0)
-    p_11   = geo.AppendPoint(1.0, 1.0)
-    p_01   = geo.AppendPoint(0.0, 1.0)
-    p_0a   = geo.AppendPoint(0.0, 0.4)
-    p_aa   = geo.AppendPoint(0.4, 0.4)
-
-    # Inner sub-square boundary on the outer domain edge (domain 2 vs outside).
-    geo.Append(["line", p_00, p_a0], leftdomain=2, rightdomain=0, bc="outer")
-    geo.Append(["line", p_0a, p_00], leftdomain=2, rightdomain=0, bc="outer")
-
-    # Outer-only boundary segments (domain 1 vs outside).
-    geo.Append(["line", p_a0, p_10], leftdomain=1, rightdomain=0, bc="outer")
-    geo.Append(["line", p_10, p_11], leftdomain=1, rightdomain=0, bc="outer")
-    geo.Append(["line", p_11, p_01], leftdomain=1, rightdomain=0, bc="outer")
-    geo.Append(["line", p_01, p_0a], leftdomain=1, rightdomain=0, bc="outer")
-
-    # Interface between fine inner and coarse outer (domain 2 vs domain 1).
-    geo.Append(["line", p_a0, p_aa], leftdomain=2, rightdomain=1, bc="inner")
-    geo.Append(["line", p_aa, p_0a], leftdomain=2, rightdomain=1, bc="inner")
-
-    geo.SetMaterial(1, "coarse")
-    geo.SetMaterial(2, "fine")
-    return geo
+    verts, cells = initial_uniform_arrays(n_initial)
+    x0, x1, y0, y1 = region
+    for _ in range(n_rounds):
+        c = verts[cells].mean(axis=1)
+        marked = ((c[:, 0] >= x0) & (c[:, 0] <= x1) &
+                  (c[:, 1] >= y0) & (c[:, 1] <= y1))
+        verts, cells = bisect_refine(verts, cells, marked)
+    return verts, cells
 
 
-for ratio in RATIOS:
-    geo = build_geometry()
-    geo.SetDomainMaxH(2, H_MAX / float(ratio))
-
-    ngmesh = geo.GenerateMesh(maxh=H_MAX)
-    out = f"graded_R{ratio}.msh"
-    ngmesh.Export(out, "Gmsh2 Format")
-    print(f"wrote {out}  ({ngmesh.Elements2D().NumPy().shape[0]} elements)")
+for r in RATIOS:
+    rounds = 2 * int(round(np.log2(r)))
+    verts, cells = deterministic_interior_mesh(N_INITIAL, rounds, REGION)
+    ratio = h_ratio(verts, cells)
+    out = f"{OUT_DIR}/graded_R{r}.msh"
+    write_gmsh22(out, verts, cells)
+    print(f"wrote graded_R{r}.msh: {len(cells)} cells, realised ratio {ratio:.2f}")
 
 print("done")

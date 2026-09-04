@@ -1,11 +1,4 @@
-"""Forward Poisson solve with a manufactured solution.
-
-Solves ``-Delta u = m`` on ``(0,1)^2`` with ``u = 0`` on the boundary,
-using P1 elements. With ``u_exact = sin(pi x) sin(pi y)`` and source
-``m = 2 pi^2 u_exact``, the L^2 error should decay like h^2.
-Generates a convergence table.
-"""
-
+"""firedrake forward poisson with the manufactured solution"""
 from argparse import ArgumentParser
 
 import numpy as np
@@ -13,8 +6,8 @@ import numpy as np
 from firedrake import *
 
 def solve_forward_poisson_mms(resolution, degree=1):
-    """Solve on an n-by-n mesh, then return the L^2 error against ``u_exact``."""
 
+    """solves with the manufactured source, returns the l2 error"""
     mesh = UnitSquareMesh(resolution, resolution)
     V = FunctionSpace(mesh, "CG", degree)
     u = TrialFunction(V)
@@ -34,11 +27,6 @@ def solve_forward_poisson_mms(resolution, degree=1):
 
 
 def convergence_test(resolutions=(8, 16, 32, 64), degree=1):
-    """Run the MMS convergence test on a sequence of meshes.
-
-    Returns a list of ``(resolution, h, error, rate)`` tuples. The first row has
-    ``rate=None`` as there is no coarser mesh to compare against.
-    """
 
     rows = []
     previous_error = None
@@ -57,7 +45,6 @@ def convergence_test(resolutions=(8, 16, 32, 64), degree=1):
 
 
 def print_table(rows):
-    """Print the rows returned by ``convergence_test``."""
 
     print(f"{'N':>4}  {'h':>10}  {'L2 error':>14}  {'rate':>6}")
     print("-" * 40)

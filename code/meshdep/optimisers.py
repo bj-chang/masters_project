@@ -1,14 +1,4 @@
-"""Optimisation wrappers used by the experiment scripts.
-
-``solve_with_tao`` and ``solve_with_scipy`` are wrappers around the
-PETSc TAO and SciPy L-BFGS-B optimisers from pyadjoint.
-``solve_with_scipy_external_check`` is the same SciPy run but with the
-convergence test done in a chosen Hilbert-space norm rather than the
-ambient l^2 norm. ``solve_with_hilbert_lbfgs`` is a small L-BFGS
-implementation in which every dot product uses the inner product
-chosen on the Control.
-"""
-
+"""optimiser wrappers: tao, scipy, scipy with the external convergence check, and the hilbert space lbfgs"""
 from pyadjoint import MinimizationProblem, minimize
 from pyadjoint.optimization.tao_solver import (
     TAOConvergenceError,
@@ -17,25 +7,14 @@ from pyadjoint.optimization.tao_solver import (
 
 
 class _ConvergedExternally(Exception):
-    """Raised by a SciPy callback once our convergence test is met."""
     pass
 
 
 def solve_with_tao(Jhat, tao_gatol=1.0e-7, tao_gttol=0.0, tao_grtol=0.0,
                    tao_max_it=50000, tao_max_funcs=50000, history=5,
                    verbose=False):
-    """Run TAO/LMVM on the reduced functional.
 
-    The defaults put TAO on the absolute test ``|g|_H <= gatol`` only,
-    to match Schwedes' ``eps = 1e-7``. The H-norm used by the
-    convergence test (and by the LMVM initial Hessian) is the one
-    ``TAOSolver`` installs from the Control's ``riesz_map``; we do not
-    override it.
-
-    Returns a dict with keys ``m_opt``, ``iterations``, ``final_J``
-    and ``converged``.
-    """
-
+    """runs pyadjoints TAOSolver, returns the iteration count"""
     parameters = {
         "tao_type": "lmvm",
         "tao_gatol": tao_gatol,
@@ -69,8 +48,8 @@ def solve_with_tao(Jhat, tao_gatol=1.0e-7, tao_gttol=0.0, tao_grtol=0.0,
 
 
 def solve_with_scipy(Jhat, gtol=1.0e-7, maxiter=5000, method="L-BFGS-B"):
-    """Run SciPy's L-BFGS-B. Returns a dict like ``solve_with_tao``."""
 
+    """plain scipy minimize on the l2 coefficients"""
     iteration_counter = [0]
 
     def callback(_):
@@ -92,17 +71,8 @@ def solve_with_scipy(Jhat, gtol=1.0e-7, maxiter=5000, method="L-BFGS-B"):
 
 def solve_with_hilbert_lbfgs(Jhat, eps=1.0e-7, max_iter=500, history=5,
                              verbose=False):
-    """L-BFGS using the H-inner product on the Control throughout.
 
-    The Control's ``riesz_map`` must be ``'L2'`` or ``'H1'``. Every dot
-    product in the two-loop recursion uses ``<.,.>_H`` and convergence
-    is declared once ``|g|_H <= eps`` with ``g`` the H-primal Riesz
-    representer of ``dJ``. The Riesz solve uses LU so the gradient is
-    computed to ~machine precision (Firedrake's default RieszMap uses
-    CG with ``rtol=1e-5``, which would otherwise put a noise floor on
-    ``|g|_H`` of order 1e-5).
-    """
-
+    """two loop lbfgs with every inner product taken in H, armijo backtracking, riesz solve by lu"""
     from firedrake import (
         Cofunction, Function, LinearVariationalProblem,
         LinearVariationalSolver, TestFunction, TrialFunction,
@@ -129,7 +99,7 @@ def solve_with_hilbert_lbfgs(Jhat, eps=1.0e-7, max_iter=500, history=5,
     def H_norm(f):
         return H_inner(f, f) ** 0.5
 
-    # Riesz solver: (M or M+K) * primal = dual.
+
     u_tr, v_te = TrialFunction(V), TestFunction(V)
     if riesz_map == "L2":
         riesz_form = inner(u_tr, v_te) * dx
@@ -170,7 +140,7 @@ def solve_with_hilbert_lbfgs(Jhat, eps=1.0e-7, max_iter=500, history=5,
                 "converged": True, "final_grad_norm_H": g_norm,
             }
 
-        # Two-loop recursion in the H-metric.
+
         q = Function(V).assign(g_curr)
         alphas = []
         for s_i, y_i, rho_i in zip(reversed(s_history),
@@ -179,8 +149,8 @@ def solve_with_hilbert_lbfgs(Jhat, eps=1.0e-7, max_iter=500, history=5,
             a = rho_i * H_inner(s_i, q)
             alphas.append(a)
             q.assign(q - a * y_i)
-        # H_0 = gamma_k * I with gamma_k = <s,y>_H / <y,y>_H. Without
-        # this rescaling the algorithm plateaus well above eps.
+
+
         if s_history:
             yy = H_inner(y_history[-1], y_history[-1])
             sy = 1.0 / rho_history[-1]
@@ -194,13 +164,13 @@ def solve_with_hilbert_lbfgs(Jhat, eps=1.0e-7, max_iter=500, history=5,
             z.assign(z + (a - beta) * s_i)
         p = Function(V).assign(-1.0 * z)
 
-        # Steepest descent fallback if p is not a descent direction.
+
         dphi0 = H_inner(g_curr, p)
         if dphi0 >= 0.0:
             p.assign(-1.0 * g_curr)
             dphi0 = -g_norm * g_norm
 
-        # Backtracking Armijo.
+
         alpha = 1.0
         c1 = 1.0e-4
         m_trial = Function(V)
@@ -247,15 +217,10 @@ def solve_with_hilbert_lbfgs(Jhat, eps=1.0e-7, max_iter=500, history=5,
 
 
 def solve_with_scipy_external_check(Jhat, eps=1.0e-7,
-                                    test_riesz_map="L2", maxiter=5000):
-    """SciPy L-BFGS-B with the convergence test done in an H-norm.
+                                    test_riesz_map="L2", maxiter=5000,
+                                    maxcor=5):
 
-    SciPy's own ``gtol`` and ``ftol`` are pinned to 1e-30 so they
-    never trigger. A callback recomputes ``|g|_H`` at each iterate
-    (with ``H = test_riesz_map``, either ``'L2'`` or ``'H1'``) and
-    raises ``_ConvergedExternally`` when ``|g|_H <= eps``.
-    """
-
+    """scipy lbfgs-b with its own tolerances disabled, halted by an external check on the chosen gradient norm. maxcor=5 to match the hilbert lbfgs"""
     from firedrake import Function, assemble, dx, grad, inner
 
     inner_control = Jhat.controls[0]
@@ -280,8 +245,8 @@ def solve_with_scipy_external_check(Jhat, eps=1.0e-7,
 
     def callback(xk):
         iteration_counter[0] += 1
-        # Re-evaluate at xk so the gradient we read is at the current
-        # iterate, not the previous one.
+
+
         m_xk = Function(V)
         m_xk.dat.data[:] = xk
         Jhat(m_xk)
@@ -299,6 +264,7 @@ def solve_with_scipy_external_check(Jhat, eps=1.0e-7,
         "gtol": 1.0e-30,
         "ftol": 1.0e-30,
         "maxiter": maxiter,
+        "maxcor": maxcor,
     }
 
     converged = False

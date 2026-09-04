@@ -1,9 +1,4 @@
-"""Poisson optimal control problem.
-
-Minimise ``J(u, m) = (1/2)|u-d|^2 + (alpha/2)|m|^2`` subject to
-``-Delta u = m`` on the unit square with ``u = 0`` on the boundary.
-"""
-
+"""the poisson control problem used by all the mesh dependence runs"""
 from argparse import ArgumentParser
 
 from firedrake import *
@@ -20,13 +15,8 @@ from meshdep.optimisers import solve_with_tao
 
 def solve_poisson_control(mesh, alpha=1.0e-4, riesz_map="L2",
                           tao_gatol=1.0e-7, verbose=False):
-    """Tape the forward solve, build the reduced functional, run TAO.
 
-    ``riesz_map`` is the inner product on the control space
-    (``'l2'``, ``'L2'`` or ``'H1'``). ``TAOSolver`` uses it for both
-    the LMVM initial Hessian and the convergence norm.
-    """
-
+    """taped forward solve + reduced functional for the control problem"""
     V = FunctionSpace(mesh, "CG", 1)
     x, y = SpatialCoordinate(mesh)
     d = Function(V, name="d").interpolate(sin(pi * x) * sin(pi * y))
@@ -38,8 +28,8 @@ def solve_poisson_control(mesh, alpha=1.0e-4, riesz_map="L2",
         u = Function(V, name="u")
         v = TestFunction(V)
         F = inner(grad(u), grad(v)) * dx - m * v * dx
-        # LU: default CG+hypre has rtol=1e-5, which puts a noise floor
-        # on the discrete gradient above the eps=1e-7 target.
+
+
         solve(F == 0, u, bcs=bc,
               solver_parameters={"ksp_type": "preonly", "pc_type": "lu"})
 

@@ -1,10 +1,4 @@
-"""Reproduce Table 2.2.
-
-For each ``(mesh, optimiser, riesz_map)`` row of a panel, prints the
-iteration count at convergence ``eps = 1e-7`` on
-``||R_H(J')||_H``.
-"""
-
+"""panel (a): scipy lbfgs on l2 coefficients (convergence checked externally) vs the hilbert lbfgs with the L2 riesz map, both history 5, graded meshes"""
 from argparse import ArgumentParser
 
 from meshdep.meshes import (
@@ -19,8 +13,6 @@ from meshdep.optimisers import (
 from meshdep.problems.poisson_control import solve_poisson_control
 
 
-# The l^2 row uses SciPy (its native metric); the function-space row
-# uses the Hilbert-space L-BFGS in meshdep.optimisers.
 PANEL_A_ROWS = [
     ("scipy_lbfgs_ext", "l2"),
     ("hilbert_lbfgs", "L2"),
@@ -29,12 +21,11 @@ PANEL_B_ROWS = [
     ("scipy_lbfgs_ext", "l2"),
     ("hilbert_lbfgs", "H1"),
 ]
-# Convergence metric per panel: L^2 for (a), H^1 for (b).
+
 PANEL_CONVERGENCE_RIESZ = {"a": "L2", "b": "H1"}
 
 
 def _build_poisson_problem(mesh, alpha, riesz_map="l2"):
-    """Build the reduced functional with the chosen Control riesz_map."""
 
     from firedrake import (
         DirichletBC, Function, FunctionSpace, SpatialCoordinate,
@@ -56,7 +47,7 @@ def _build_poisson_problem(mesh, alpha, riesz_map="l2"):
         u = Function(V)
         v = TestFunction(V)
         F = inner(grad(u), grad(v)) * dx - m * v * dx
-        # LU: see note in meshdep.problems.poisson_control.
+
         solve(F == 0, u, bcs=bc,
               solver_parameters={"ksp_type": "preonly", "pc_type": "lu"})
         J = assemble(0.5 * (u - d)**2 * dx + 0.5 * alpha * m**2 * dx)
@@ -68,10 +59,6 @@ def _build_poisson_problem(mesh, alpha, riesz_map="l2"):
 
 
 def run_panel(meshes, rows, alpha=1.0e-4, convergence_riesz_map="L2"):
-    """Run every ``(mesh, optimiser, riesz_map)`` combination for a panel.
-
-    Returns ``{(mesh_label, optimiser_name, riesz_map): iteration_count}``.
-    """
 
     results = {}
     for label, mesh in meshes:
@@ -96,7 +83,7 @@ def run_panel(meshes, rows, alpha=1.0e-4, convergence_riesz_map="L2"):
                 result = solve_with_scipy_external_check(
                     Jhat, eps=1.0e-7,
                     test_riesz_map=convergence_riesz_map,
-                    maxiter=5000,
+                    maxiter=5000, maxcor=5,
                 )
             else:
                 Jhat = _build_poisson_problem(mesh, alpha, riesz_map="l2")
@@ -112,7 +99,6 @@ def run_panel(meshes, rows, alpha=1.0e-4, convergence_riesz_map="L2"):
 
 
 def print_console_table(panel_label, meshes, rows, results):
-    """Print one panel as a fixed-width text table."""
 
     mesh_labels = [label for label, _ in meshes]
     print(f"\n{panel_label}")

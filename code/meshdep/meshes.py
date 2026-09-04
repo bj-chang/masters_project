@@ -1,23 +1,18 @@
-"""Mesh constructors for the experiments. Can make a uniform mesh, use a mesh
-from a file, manually generate a mesh, or use Netgen to generate a mesh."""
-
+"""mesh builders and loaders"""
 import numpy as np
 
 from firedrake import *
 
 
 def uniform_unit_square(n):
-    """Uniform n-by-n triangulation of the unit square."""
 
+    """n by n unit square split into triangles"""
     return UnitSquareMesh(n, n)
 
 
 def graded_unit_square_from_file(path):
-    """Load a pre-generated graded mesh from a Gmsh .msh file.
 
-    Returns ``(mesh, realised h_max/h_min)``.
-    """
-
+    """loads a gmsh mesh, returns (mesh, realised hmax/hmin)"""
     mesh = Mesh(path)
     DG0 = FunctionSpace(mesh, "DG", 0)
     h = Function(DG0).interpolate(CellDiameter(mesh))
@@ -27,15 +22,6 @@ def graded_unit_square_from_file(path):
 
 
 def graded_unit_square_tensor(h_ratio, n=32):
-    """Tensor-product graded mesh of the unit square that does not use Netgen.
-
-    Warps each coord of ``UnitSquareMesh(n, n)`` using
-    ``f(s) = 1/2 (1 + tanh(alpha*(2s-1))/tanh(alpha))`` with
-    ``alpha = arccosh(sqrt(h_ratio))``. Used as a fallback if Netgen
-    isn't available. 
-    
-    Returns ``(mesh, realised h_max/h_min)``.
-    """
 
     if h_ratio < 1.0:
         raise ValueError("h_ratio must be >= 1")
@@ -59,15 +45,8 @@ def graded_unit_square_tensor(h_ratio, n=32):
 
 
 def graded_unit_square(h_ratio, h_max=0.2):
-    """Graded unit-square mesh made using Netgen.
 
-    Coarse outer rectangle with target cell size ``h_max`` sits around a finer
-    sub-square ``(0, 0.4)^2`` with target ``h_max / h_ratio``.
-    
-    Returns ``(mesh, realised h_max/h_min)``.
-    """
 
-    # Only import here, so that other parts can work without Netgen
     from netgen.geom2d import SplineGeometry
 
     geo = SplineGeometry()

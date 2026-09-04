@@ -1,10 +1,4 @@
-"""Forward Poisson solve, by hand in plain Python with P1 elements.
-
-Solves ``-Delta u = m`` on ``(0,1)^2`` with ``u = 0`` on the boundary,
-with the manufactured solution ``u_exact = sin(pi x) sin(pi y)`` and
-source ``m = 2 pi^2 u_exact``, all done 'by-hand'.
-"""
-
+"""p1 poisson assembled by hand, algorithm 1 in the diss"""
 from argparse import ArgumentParser
 import math
 import numpy as np
@@ -12,13 +6,6 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
 
-# Reference triangle basis functions:
-#   phi_1 = 1 - xi - eta
-#   phi_2 = xi
-#   phi_3 = eta
-#
-# Their gradients with respect to (xi, eta) are constant on this triangle, so 
-# we can tabulate them here once, and then reuse these on every cell.
 REFERENCE_GRADS = np.array([
     [-1.0, -1.0],
     [ 1.0,  0.0],
@@ -26,8 +13,6 @@ REFERENCE_GRADS = np.array([
 ])
 
 
-# Degree 2 quadrature rule on the reference triangle (vertices (0,0), (1,0), 
-# (0,1) and area 1/2) - exact for polynomials up to degree 2.
 QUAD_POINTS = np.array([
     [1.0 / 6.0, 1.0 / 6.0],
     [2.0 / 3.0, 1.0 / 6.0],
@@ -42,20 +27,13 @@ QUAD_WEIGHTS = np.array([
 
 
 def make_unit_square_tri_mesh(nx, ny=None):
-    """Structured triangular mesh of the unit square.
-
-    Slices the unit square into nx-by-ny rectangles and cuts each
-    rectangle along its diagonal into two triangles, giving 2*nx*ny
-    triangles and (nx+1)*(ny+1) vertices. Returns the vertex coordinates
-    and the triangle-to-vertex index array.
-    """
     if ny is None:
         ny = nx
 
     xs = np.linspace(0.0, 1.0, nx + 1)
     ys = np.linspace(0.0, 1.0, ny + 1)
 
-    # Vertex ordering - loop over rows in y, then loop each row over x.
+
     vertices = np.array([(x, y) for y in ys for x in xs], dtype=float)
 
     def vertex_id(i, j):
@@ -75,7 +53,6 @@ def make_unit_square_tri_mesh(nx, ny=None):
 
 
 def p1_basis_values(xi, eta):
-    """Evaluate the three P1 basis functions on the reference triangle."""
 
     return np.array([
         1.0 - xi - eta,
@@ -85,7 +62,6 @@ def p1_basis_values(xi, eta):
 
 
 def boundary_nodes(vertices, tol=1.0e-12):
-    """Return the indices of vertices lying on the boundary of the unit square."""
 
     x = vertices[:, 0]
     y = vertices[:, 1]
@@ -96,13 +72,8 @@ def boundary_nodes(vertices, tol=1.0e-12):
 
 
 def assemble_poisson_p1(nx, rhs_function):
-    """Assemble the global system A u = b for the Poisson problem.
 
-    Uses P1 elements on a structured triangular mesh with homogeneous
-    Dirichlet BCs. Returns the mesh together with the assembled sparse 
-    stiffness matrix and load vector.
-    """
-
+    """element loop: map to the reference triangle, quadrature for the load, dirichlet rows overwritten"""
     vertices, triangles = make_unit_square_tri_mesh(nx)
     n_vertices = len(vertices)
 
@@ -112,36 +83,34 @@ def assemble_poisson_p1(nx, rhs_function):
     for tri in triangles:
         coords = vertices[tri]
 
-        # Affine map from reference triangle to physical triangle.
+
         x0 = coords[0]
         J = np.column_stack((coords[1] - coords[0], coords[2] - coords[0]))
         detJ = np.linalg.det(J)
         abs_detJ = abs(detJ)
         area = 0.5 * abs_detJ
 
-        # For affine P1 elements, the physical gradients are constant
-        # on each cell and obtained by the chain rule.
+
         invJ = np.linalg.inv(J)
         grad_phys = REFERENCE_GRADS @ invJ
 
-        # Local stiffness matrix.
+
         local_A = area * (grad_phys @ grad_phys.T)
 
-        # Local load vector by quadrature.
+
         local_b = np.zeros(3)
         for (xi, eta), w in zip(QUAD_POINTS, QUAD_WEIGHTS):
             phi = p1_basis_values(xi, eta)
             xq = x0 + J @ np.array([xi, eta])
             local_b += w * abs_detJ * rhs_function(xq[0], xq[1]) * phi
 
-        # Local-to-global assembly.
+
         for a, Arow in enumerate(tri):
             b[Arow] += local_b[a]
             for bcol, Acol in enumerate(tri):
                 A[Arow, Acol] += local_A[a, bcol]
 
-    # Impose homogeneous Dirichlet boundary conditions by overwriting
-    # the rows corresponding to boundary nodes.
+
     bdry = boundary_nodes(vertices)
     b[bdry] = 0.0
     for i in bdry:
@@ -152,20 +121,15 @@ def assemble_poisson_p1(nx, rhs_function):
 
 
 def solve_poisson_p1(nx):
-    """Solve the manufactured Poisson problem with P1 finite elements.
 
-    The exact solution is u_exact = sin(pi x) sin(pi y), so the source
-    term is m = 2 pi^2 sin(pi x) sin(pi y). Returns a dictionary
-    containing the mesh, the coefficient vector and the L2 error.
-    """
-
+    """assembles and solves, returns the error against the manufactured solution"""
     u_exact = lambda x, y: math.sin(math.pi * x) * math.sin(math.pi * y)
     rhs = lambda x, y: 2.0 * math.pi**2 * u_exact(x, y)
 
     vertices, triangles, A, b = assemble_poisson_p1(nx, rhs)
     uh = spla.spsolve(A, b)
 
-    # Compute an L2 error by quadrature over each triangle.
+
     error_sq = 0.0
     for tri in triangles:
         coords = vertices[tri]
@@ -190,11 +154,6 @@ def solve_poisson_p1(nx):
 
 
 def convergence_test(mesh_sizes=(4, 8, 16, 32)):
-    """Run a convergence study for the plain Python P1 solver.
-
-    Returns a list of ``(nx, h, l2_error, rate)`` tuples, with ``rate``
-    set to ``None`` for the coarsest mesh.
-    """
 
     rows = []
     previous_error = None
@@ -211,7 +170,6 @@ def convergence_test(mesh_sizes=(4, 8, 16, 32)):
 
 
 def print_table(rows):
-    """Pretty-print the rows returned by ``convergence_test``."""
 
     print(f"{'nx':>4}  {'h':>10}  {'L2 error':>16}  {'rate':>6}")
     print("-" * 44)

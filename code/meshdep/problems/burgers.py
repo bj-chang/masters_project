@@ -1,21 +1,4 @@
-"""Scalar viscous Burgers optimal control problem in 1D.
-
-Forward equation:
-
-    u_t + u u_x - nu u_xx = m   in (0, T) x (0, 1),
-    u = 0                        on the boundary,
-    u(0, x) = u_0(x).
-
-Plain Python / NumPy / SciPy implementation: P1 in space, backward
-Euler in time, Newton's method for the nonlinear term, with a
-discrete adjoint and a Taylor test for the optimisation pipeline.
-
-Subcommands:
-  ``forward``     - single forward solve at default settings
-  ``convergence`` - MMS convergence study 
-  ``taylor``      - Taylor test for the gradient 
-"""
-
+"""1d viscous burgers by hand: p1 in space, backward euler, newton each step, discrete adjoint backwards in time, taylor test"""
 from argparse import ArgumentParser
 import math
 
@@ -24,19 +7,11 @@ import scipy.sparse as sp
 import scipy.sparse.linalg as spla
 
 
-# Mesh, mass and stiffness matrices, and quadrature
-
-# Two-point Gauss quadrature on the reference interval [-1, 1].
 GAUSS_POINTS = np.array([-1.0 / math.sqrt(3.0), 1.0 / math.sqrt(3.0)])
 GAUSS_WEIGHTS = np.array([1.0, 1.0])
 
 
 def make_uniform_mesh_1d(num_elements, a=0.0, b=1.0):
-    """Build a uniform 1D mesh on [a, b].
-
-    Returns the node coordinates and an array of element connectivity,
-    where each row contains the two node indices of one interval element.
-    """
 
     x = np.linspace(a, b, num_elements + 1)
     elements = np.column_stack([
@@ -47,15 +22,6 @@ def make_uniform_mesh_1d(num_elements, a=0.0, b=1.0):
 
 
 def assemble_p1_mass_stiffness_1d(x, elements):
-    """Assemble the global P1 mass and stiffness matrices on a 1D mesh.
-
-    For each element [x_i, x_{i+1}] we use the local matrices
-
-        M_e = (h/6) [[2, 1],          K_e = (1/h) [[ 1, -1],
-                     [1, 2]],                      [-1,  1]],
-
-    and accumulate them into sparse global matrices.
-    """
 
     n_nodes = len(x)
     mass_rows, mass_cols, mass_vals = [], [], []
@@ -86,7 +52,6 @@ def assemble_p1_mass_stiffness_1d(x, elements):
 
 
 def assemble_load_vector(x, elements, source_fn, t):
-    """Assemble the load vector for a source m(x, t) by Gauss quadrature."""
 
     F = np.zeros(len(x))
     for elem in elements:
@@ -103,23 +68,13 @@ def assemble_load_vector(x, elements, source_fn, t):
 
 
 def assemble_convection_residual_and_jacobian(x, elements, U):
-    """Assemble the nonlinear convection residual c(U; v) and its Jacobian.
-
-    The Burgers convection term is treated in the form
-
-        c(U; v) = integral of u_h (u_h)_x v_h dx,
-
-    so that on a P1 element with constant (u_h)_x and linear u_h the
-    local contribution is straightforward to write down by hand.
-    """
 
     n_nodes = len(x)
     R_conv = np.zeros(n_nodes)
     jac_rows, jac_cols, jac_vals = [], [], []
     mass_ref = np.array([[2.0, 1.0], [1.0, 2.0]]) / 6.0
 
-    # Local derivative pattern: if u_loc = [u_i, u_{i+1}], then
-    # u_x = (-u_i + u_{i+1}) / h.
+
     derivative_vector = np.array([-1.0, 1.0])
 
     for elem in elements:
@@ -145,8 +100,6 @@ def assemble_convection_residual_and_jacobian(x, elements, U):
     return R_conv, J_conv
 
 
-# Forward solve with a callable source term
-
 def solve_forward_burgers_1d(
     num_elements=80,
     T=0.1,
@@ -157,15 +110,8 @@ def solve_forward_burgers_1d(
     newton_tol=1e-10,
     max_newton_iters=25,
 ):
-    """Solve the forward scalar viscous Burgers equation in 1D.
 
-    P1 in space, backward Euler in time, Newton at each implicit step.
-    The source ``source_fn(x, t)`` is supplied as a callable.
-
-    Returns a dict with the mesh, time grid, full state history, mass
-    and stiffness matrices, and per-step Newton iteration counts.
-    """
-
+    """backward euler + newton forward solve, keeps every state for the adjoint"""
     x, elements = make_uniform_mesh_1d(num_elements)
     M, K = assemble_p1_mass_stiffness_1d(x, elements)
 
@@ -179,7 +125,7 @@ def solve_forward_burgers_1d(
     states = [U_prev.copy()]
     newton_iterations = []
 
-    # The linear part of the Jacobian is fixed across Newton iterations.
+
     linear_part = M / dt + nu * K
 
     for n in range(num_steps):
@@ -221,16 +167,12 @@ def solve_forward_burgers_1d(
     }
 
 
-# Manufactured solution and convergence study
-
 def manufactured_exact_solution(t, x):
-    """Smooth exact solution u_exact(t, x) = exp(-t) sin(pi x)."""
 
     return np.exp(-t) * np.sin(np.pi * x)
 
 
 def manufactured_source(x, t, nu=0.05):
-    """Source term so that the manufactured exact solution satisfies Burgers."""
 
     u    =  np.exp(-t) * np.sin(np.pi * x)
     u_x  =  np.exp(-t) * np.pi * np.cos(np.pi * x)
@@ -240,7 +182,6 @@ def manufactured_source(x, t, nu=0.05):
 
 
 def compute_l2_error(x, elements, uh, exact_fn, t):
-    """Compute ||u_h - u_exact||_{L2} on the mesh by Gauss quadrature."""
 
     error_sq = 0.0
     for elem in elements:
@@ -258,7 +199,6 @@ def compute_l2_error(x, elements, uh, exact_fn, t):
 
 
 def compute_discrete_space_time_l2_error(result, exact_fn):
-    """Compute (dt sum_n ||u_h^n - u_exact(t_n)||^2)^(1/2)."""
 
     dt = result["dt"]
     x = result["x"]
@@ -275,15 +215,8 @@ def compute_discrete_space_time_l2_error(result, exact_fn):
 
 def convergence_test(mesh_sizes=(10, 20, 40, 80), T=0.1, nu=0.05,
                      steps_per_element=8):
-    """Run the manufactured-solution convergence study.
 
-    Refines space and time together by setting
-    ``num_steps = steps_per_element * num_elements`` so that dt is
-    proportional to h. Returns a list of dictionaries with the errors
-    and observed rates for each refinement level, plus the average
-    number of Newton iterations per time step.
-    """
-
+    """mms convergence, final time and space time l2 errors"""
     rows = []
     previous_final = None
     previous_spacetime = None
@@ -331,7 +264,6 @@ def convergence_test(mesh_sizes=(10, 20, 40, 80), T=0.1, nu=0.05,
 
 
 def print_convergence_table(rows):
-    """Pretty-print the output of ``convergence_test``."""
 
     header = (
         f"{'N':>4}  {'Nt':>5}  {'h':>8}  "
@@ -354,15 +286,7 @@ def print_convergence_table(rows):
         )
 
 
-# Forward solve with a control history (one nodal vector per step)
-
 def build_control_history_from_callable(x, times, control_fn):
-    """Sample a callable control m(x, t) at the mesh nodes for each implicit step.
-
-    Returns an array of shape ``(num_steps, num_nodes)`` where row n
-    contains the nodal values of the control used in the step from
-    t_n to t_{n+1}.
-    """
 
     control_history = np.zeros((len(times) - 1, len(x)))
     for n, t in enumerate(times[1:]):
@@ -382,11 +306,6 @@ def solve_forward_burgers_with_control(
     newton_tol=1e-10,
     max_newton_iters=25,
 ):
-    """Forward Burgers solve with a control supplied as a time-indexed array.
-
-    Same as ``solve_forward_burgers_1d`` but the source is a P1
-    control field per time step, so the load is ``M @ m^n``.
-    """
 
     x, elements = make_uniform_mesh_1d(num_elements)
     M, K = assemble_p1_mass_stiffness_1d(x, elements)
@@ -452,17 +371,7 @@ def solve_forward_burgers_with_control(
     }
 
 
-
-# Tracking objective, discrete adjoint, and L2-gradient
-
 def evaluate_tracking_objective(result, target_history, alpha):
-    """Evaluate the fully discrete tracking objective
-
-        J_h = (dt/2) sum_n ||U^n - D^n||_M^2
-            + (alpha dt/2) sum_n ||m^n||_M^2,
-
-    where ||v||_M^2 = v^T M v is the mass-matrix L2 norm.
-    """
 
     M = result["M"]
     dt = result["dt"]
@@ -485,11 +394,6 @@ def evaluate_tracking_objective(result, target_history, alpha):
 
 
 def solve_discrete_adjoint(result, target_history):
-    """Solve the discrete adjoint equation backward in time.
-
-    Derived from the fully discrete forward scheme directly, not from
-    discretising the continuous adjoint PDE.
-    """
 
     x = result["x"]
     elements = result["elements"]
@@ -524,11 +428,6 @@ def solve_discrete_adjoint(result, target_history):
 
 
 def compute_discrete_l2_gradient(result, target_history, alpha):
-    """Compute the discrete L2-gradient grad^n = alpha m^n + p^n / dt.
-
-    This is the discrete analogue of the continuous formula
-    ``grad J(m) = lambda + alpha m`` from the dissertation.
-    """
 
     adjoints = solve_discrete_adjoint(result, target_history)
     gradient = alpha * result["control_history"] + adjoints / result["dt"]
@@ -536,10 +435,6 @@ def compute_discrete_l2_gradient(result, target_history, alpha):
 
 
 def control_inner_product(control_a, control_b, M, dt):
-    """Discrete L2-like inner product on control histories.
-
-        <a, b> = dt sum_n a_n^T M b_n.
-    """
 
     total = 0.0
     for a_n, b_n in zip(control_a, control_b):
@@ -547,12 +442,8 @@ def control_inner_product(control_a, control_b, M, dt):
     return float(total)
 
 
-# Taylor test
-
-
 def reduced_objective_only(control_history, num_elements, T, num_steps,
                            nu, u0_fn, target_history, alpha):
-    """Solve the forward problem for a given control and return J_h(m)."""
 
     result = solve_forward_burgers_with_control(
         num_elements=num_elements,
@@ -568,12 +459,6 @@ def reduced_objective_only(control_history, num_elements, T, num_steps,
 def run_taylor_test(base_control_history, direction_history, target_history,
                     num_elements, T, num_steps, nu, u0_fn, alpha,
                     h_values=(1e-1, 5e-2, 2.5e-2, 1.25e-2, 6.25e-3)):
-    """Run a Taylor-style gradient test for the reduced objective.
-
-    Returns ``(rows, directional_derivative)``, where ``rows`` is a
-    list of dicts with the first- and second-order remainders and
-    their observed convergence rates.
-    """
 
     base_result = solve_forward_burgers_with_control(
         num_elements=num_elements,
@@ -631,7 +516,6 @@ def run_taylor_test(base_control_history, direction_history, target_history,
 
 
 def print_taylor_table(rows):
-    """Pretty-print the output of ``run_taylor_test``."""
 
     header = (f"{'h':>10}  {'|R1|':>14}  {'rate':>6}  "
               f"{'|R2|':>14}  {'rate':>6}")
@@ -648,8 +532,6 @@ def print_taylor_table(rows):
             f"{row['second_remainder']:>14.6e}  {r2}"
         )
 
-
-# CLI
 
 def main():
     parser = ArgumentParser(description=__doc__.splitlines()[0])
@@ -701,7 +583,7 @@ def main():
         print_convergence_table(rows)
 
     elif args.command == "taylor":
-        # Build a target trajectory from a smooth reference control.
+
         x, elements = make_uniform_mesh_1d(args.num_elements)
         times = np.linspace(0.0, args.T, args.num_steps + 1)
         u0_fn = lambda x: 0.0
